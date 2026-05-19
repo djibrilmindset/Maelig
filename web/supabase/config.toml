@@ -42,9 +42,6 @@ subject = "Votre lien magique DEP"
 [auth.email.template.invite]
 subject = "Vous avez été invité sur DEP"
 
-[auth.external.google]
-enabled = true
-skip_nonce_check = false
-
-[auth.external.apple]
-enabled = true
+# Note : OAuth Google/Apple gérés côté Supabase Dashboard (client_id + secret
+# sensibles, hors config.toml). Le push CLI ne touche QUE Site URL + redirect URLs
+# + email templates + flags signup.

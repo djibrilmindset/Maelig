@@ -1,22 +1,30 @@
 "use client"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
-import { Loader2 } from "lucide-react"
+import { Loader2, AlertCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-/**
- * Boutons OAuth 1-clic : Google + Apple (+ stub Facebook si besoin futur).
- *
- * Pré-requis Supabase :
- * - Auth Providers → Google → enable + client_id + secret + redirect URL
- * - Auth Providers → Apple → enable + Services ID + Team ID + Key ID + Private Key
- * - Site URL = production URL (sinon redirect cassé)
- */
-export function OAuthButtons({ redirectTo, mode = "login" }: { redirectTo?: string; mode?: "login" | "signup" }) {
-  const [pending, setPending] = useState<"google" | "apple" | null>(null)
+type Provider = "google" | "apple"
 
-  async function signIn(provider: "google" | "apple") {
+export function OAuthButtons({ redirectTo, mode = "login" }: { redirectTo?: string; mode?: "login" | "signup" }) {
+  const [pending, setPending] = useState<Provider | null>(null)
+  const [enabled, setEnabled] = useState<{ google: boolean; apple: boolean } | null>(null)
+
+  useEffect(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    if (!url || !key) {
+      setEnabled({ google: false, apple: false })
+      return
+    }
+    fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } })
+      .then((r) => r.json())
+      .then((d) => setEnabled({ google: !!d?.external?.google, apple: !!d?.external?.apple }))
+      .catch(() => setEnabled({ google: false, apple: false }))
+  }, [])
+
+  async function signIn(provider: Provider) {
     setPending(provider)
     const supabase = createSupabaseBrowserClient()
     const url = typeof window !== "undefined" ? window.location.origin : ""
@@ -33,38 +41,63 @@ export function OAuthButtons({ redirectTo, mode = "login" }: { redirectTo?: stri
     }
   }
 
+  // Aucun provider enabled : on cache complètement le bloc plutôt que d'afficher
+  // des boutons qui mènent à une erreur silencieuse.
+  if (enabled && !enabled.google && !enabled.apple) {
+    return (
+      <div className="rounded-[var(--radius)] border border-warning/30 bg-warning/5 p-3 text-xs text-warning-foreground/80">
+        <AlertCircle className="inline h-3 w-3 mr-1 -mt-0.5" />
+        OAuth (Google/Apple) en cours d&apos;activation côté admin. Utilisez {mode === "signup" ? "le formulaire ci-dessous" : "votre email + mot de passe"} en attendant.
+      </div>
+    )
+  }
+
+  // En cours de chargement : skeleton léger pour éviter le flash
+  if (!enabled) {
+    return (
+      <div className="space-y-2.5">
+        <div className="h-12 rounded-[var(--radius)] bg-surface-2/40 animate-pulse" />
+        <div className="h-12 rounded-[var(--radius)] bg-surface-2/40 animate-pulse" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-2.5">
-      <button
-        type="button"
-        onClick={() => signIn("google")}
-        disabled={pending !== null}
-        className={cn(
-          "group relative w-full inline-flex items-center justify-center gap-3 h-12 rounded-[var(--radius)]",
-          "bg-white text-[#1f1f1f] font-medium text-sm border border-white/0",
-          "hover:bg-[#f8f9fa] active:scale-[0.98] transition-all",
-          "disabled:opacity-60 disabled:cursor-not-allowed",
-          "shadow-[0_2px_6px_rgba(0,0,0,0.2)]",
-        )}
-      >
-        {pending === "google" ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
-        Continuer avec Google
-      </button>
+      {enabled.google ? (
+        <button
+          type="button"
+          onClick={() => signIn("google")}
+          disabled={pending !== null}
+          className={cn(
+            "group relative w-full inline-flex items-center justify-center gap-3 h-12 rounded-[var(--radius)]",
+            "bg-white text-[#1f1f1f] font-medium text-sm border border-white/0",
+            "hover:bg-[#f8f9fa] active:scale-[0.98] transition-all",
+            "disabled:opacity-60 disabled:cursor-not-allowed",
+            "shadow-[0_2px_6px_rgba(0,0,0,0.2)]",
+          )}
+        >
+          {pending === "google" ? <Loader2 className="h-4 w-4 animate-spin" /> : <GoogleIcon />}
+          Continuer avec Google
+        </button>
+      ) : null}
 
-      <button
-        type="button"
-        onClick={() => signIn("apple")}
-        disabled={pending !== null}
-        className={cn(
-          "group relative w-full inline-flex items-center justify-center gap-3 h-12 rounded-[var(--radius)]",
-          "bg-black text-white font-medium text-sm border border-white/10",
-          "hover:bg-[#1a1a1a] active:scale-[0.98] transition-all",
-          "disabled:opacity-60 disabled:cursor-not-allowed",
-        )}
-      >
-        {pending === "apple" ? <Loader2 className="h-4 w-4 animate-spin" /> : <AppleIcon />}
-        Continuer avec Apple
-      </button>
+      {enabled.apple ? (
+        <button
+          type="button"
+          onClick={() => signIn("apple")}
+          disabled={pending !== null}
+          className={cn(
+            "group relative w-full inline-flex items-center justify-center gap-3 h-12 rounded-[var(--radius)]",
+            "bg-black text-white font-medium text-sm border border-white/10",
+            "hover:bg-[#1a1a1a] active:scale-[0.98] transition-all",
+            "disabled:opacity-60 disabled:cursor-not-allowed",
+          )}
+        >
+          {pending === "apple" ? <Loader2 className="h-4 w-4 animate-spin" /> : <AppleIcon />}
+          Continuer avec Apple
+        </button>
+      ) : null}
 
       <p className="text-[11px] text-muted-2 text-center mt-2">
         {mode === "signup" ? "Création" : "Connexion"} 1-clic. Aucune carte bancaire demandée.
