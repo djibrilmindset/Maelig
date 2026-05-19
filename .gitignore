@@ -1,0 +1,27 @@
+# Workspace meta
+.DS_Store
+
+# Next.js / Node
+**/node_modules
+**/.next/
+**/.vercel
+**/dist/
+**/build/
+
+# Env (secrets — never commit)
+**/.env*
+!**/.env.example
+
+# Logs
+*.log
+
+# IDE
+.idea
+.vscode
+
+# Supabase local state
+**/supabase/.branches
+**/supabase/.temp
+
+# Caches
+.cache

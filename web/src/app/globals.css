@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+/* ============================================================
+   DEP — Design tokens (Niche 3.0)
+   - Palette extraite du logo DEP : noir profond, argent métal,
+     jaune électrique (éclair), accents fils (rouge/bleu/vert).
+   - Typo display: Bricolage Grotesque (variable, distinctive).
+   - Typo body: Inter (lisibilité chefs non-digital).
+   - Mono: JetBrains Mono.
+   ============================================================ */
+
+:root {
+  /* Surfaces */
+  --background:        #07070b;
+  --surface:           #0e0e15;
+  --surface-2:         #14141d;
+  --surface-3:         #1d1d28;
+  --border:            #25252f;
+  --border-strong:     #3a3a47;
+
+  /* Texts */
+  --foreground:        #f4f4f5;
+  --muted:             #a1a1aa;
+  --muted-2:           #71717a;
+
+  /* Brand */
+  --electric:          #ffd500;     /* jaune éclair (primary) */
+  --electric-soft:     #ffe352;
+  --electric-deep:     #b89800;
+  --electric-glow:     rgba(255,213,0,0.45);
+
+  --wire-red:          #e63946;
+  --wire-blue:         #2f6fff;
+  --wire-green:        #10b981;
+  --wire-yellow:       #f4c20b;
+
+  --success:           #22c55e;
+  --warning:           #f59e0b;
+  --danger:            #ef4444;
+  --info:              #3b82f6;
+
+  --ring:              rgba(255,213,0,0.55);
+
+  --radius-sm: 0.5rem;
+  --radius:    0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --shadow-electric: 0 0 0 1px rgba(255,213,0,0.20), 0 8px 28px -8px rgba(255,213,0,0.25);
+}
+
+@theme inline {
+  --color-background:      var(--background);
+  --color-foreground:      var(--foreground);
+  --color-surface:         var(--surface);
+  --color-surface-2:       var(--surface-2);
+  --color-surface-3:       var(--surface-3);
+  --color-border:          var(--border);
+  --color-border-strong:   var(--border-strong);
+  --color-muted:           var(--muted);
+  --color-muted-2:         var(--muted-2);
+  --color-electric:        var(--electric);
+  --color-electric-soft:   var(--electric-soft);
+  --color-electric-deep:   var(--electric-deep);
+  --color-wire-red:        var(--wire-red);
+  --color-wire-blue:       var(--wire-blue);
+  --color-wire-green:      var(--wire-green);
+  --color-wire-yellow:     var(--wire-yellow);
+  --color-success:         var(--success);
+  --color-warning:         var(--warning);
+  --color-danger:          var(--danger);
+  --color-info:            var(--info);
+
+  --font-sans:    var(--font-inter);
+  --font-display: var(--font-bricolage);
+  --font-mono:    var(--font-jetbrains);
+
+  --radius-sm:    var(--radius-sm);
+  --radius:       var(--radius);
+  --radius-lg:    var(--radius-lg);
+  --radius-xl:    var(--radius-xl);
+}
+
+* { border-color: var(--border); }
+
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Inter, ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv11","ss01","ss03";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-image:
+    radial-gradient(1200px 600px at 80% -10%, rgba(255,213,0,0.06), transparent 60%),
+    radial-gradient(900px 500px at -10% 60%, rgba(47,111,255,0.05), transparent 70%),
+    radial-gradient(800px 400px at 50% 110%, rgba(16,185,129,0.04), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Grid background */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 800px 500px at 50% 0%, #000 50%, transparent 90%);
+}
+
+/* Noise grain (Niche 3.0) */
+.grain::after {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  opacity: 0.035; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.7'/></svg>");
+}
+
+/* Glass cards */
+.glass {
+  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  border: 1px solid var(--border);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* Glow utilities */
+.glow-electric { box-shadow: var(--shadow-electric); }
+
+/* Wire underline animation */
+@keyframes flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.wire-underline {
+  background-image: linear-gradient(
+    90deg,
+    var(--wire-red),
+    var(--wire-yellow),
+    var(--wire-blue),
+    var(--wire-green),
+    var(--wire-red)
+  );
+  background-size: 200% 100%;
+  animation: flow 6s linear infinite;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--electric-deep); }
+
+/* Focus rings */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Selection */
+::selection { background: var(--electric); color: #000; }
+
+/* Marquee */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee { animation: marquee 30s linear infinite; }
+
+/* Pulse electric */
+@keyframes pulse-electric {
+  0%, 100% { box-shadow: 0 0 0 0 var(--electric-glow); }
+  50%      { box-shadow: 0 0 0 14px transparent; }
+}
+.pulse-electric { animation: pulse-electric 2.4s ease-out infinite; }
