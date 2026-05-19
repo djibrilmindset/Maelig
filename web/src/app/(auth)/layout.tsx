@@ -26,9 +26,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </div>
       </aside>
 
-      <main className="relative flex items-center justify-center p-6 sm:p-10">
+      <main className="relative flex items-center justify-center p-6 pt-24 sm:p-10 sm:pt-28 lg:pt-10">
         <div className="absolute top-6 left-6 lg:hidden">
-          <DepLogo size={32} withWordmark />
+          <DepLogo size={32} />
         </div>
         <div className="w-full max-w-md">{children}</div>
         <Link

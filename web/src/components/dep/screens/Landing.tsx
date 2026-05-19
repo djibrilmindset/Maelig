@@ -59,7 +59,7 @@ function LandingNav() {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: 'clamp(16px, 3.5vw, 24px) clamp(16px, 4vw, 48px)',
     }}>
-      <Image src="/dep-logo.png" alt="DEP" width={120} height={40} priority style={{ width: "auto", height: 40 }} />
+      <Image src="/dep-logo.png" alt="DEP" width={120} height={40} priority style={{ width: "auto", height: 'clamp(28px, 5vw, 40px)', mixBlendMode: 'screen' }} />
       <DepMagnetic strength={0.2}>
         <a href="/inscription" className="dep-btn dep-btn--primary dep-btn--sm" style={{ textDecoration: 'none' }}>
           Essayer 14 jours
@@ -115,9 +115,9 @@ function LandingHero() {
         </DepReveal>
 
         <DepReveal delay={360}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
             <DepMagnetic strength={0.3}>
-              <a href="#tarifs" className="dep-btn dep-btn--primary dep-btn--lg" style={{ textDecoration: 'none' }}>
+              <a href="/inscription" className="dep-btn dep-btn--primary dep-btn--lg" style={{ textDecoration: 'none' }}>
                 Démarrer mon essai gratuit
                 <DepIcon.arrow style={{ width: 18, height: 18 }} />
               </a>
@@ -349,52 +349,52 @@ function LandingMath() {
 
 function LandingParcours() {
   const steps = [
-    { n: '01', icon: 'mic', title: 'Vocal', body: 'Sur chantier, tu dictes ton devis à l\'app. Pas de clavier, pas de stylo, pas de retour bureau' },
-    { n: '02', icon: 'bolt', title: 'Clarif IA', body: 'L\'IA structure ce que t\'as dit en lignes de devis. Quantités, prix, main d\'œuvre, tout est extrait' },
-    { n: '03', icon: 'euro', title: 'Devis', body: 'Tu relis 30 secondes, tu signes du doigt, le devis part au client par email. Tracé Factur-X 2026' },
-    { n: '04', icon: 'send', title: 'Facture', body: 'Le client accepte, la facture se génère seule. Relance auto à J+30 si pas payé' },
+    { icon: 'mic',   title: 'Tu parles',    sub: 'Sur le chantier' },
+    { icon: 'bolt',  title: 'L’IA écrit', sub: 'Devis structuré' },
+    { icon: 'euro',  title: 'Tu valides',   sub: 'Le client signe' },
+    { icon: 'send',  title: 'Tu es payé',   sub: 'Relance auto' },
   ];
   return (
     <section style={{
       background: 'var(--dep-black)', color: 'var(--dep-paper)', padding: 'clamp(64px, 10vw, 120px) clamp(20px, 5vw, 64px)',
     }}>
       <div style={{ maxWidth: 'min(1200px, 100%)', margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24, flexWrap: 'wrap' }}>
           <span className="dep-cable" />
           <span className="dep-eyebrow">Parcours · 4 étapes · 4 minutes</span>
         </div>
-        <h2 style={{ fontSize: 'clamp(30px, 5.5vw, 56px)', fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1.04, marginBottom: 64, maxWidth: 'min(800px, 100%)' }}>
+        <h2 style={{ fontSize: 'clamp(28px, 5.5vw, 56px)', fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1.04, marginBottom: 'clamp(36px, 6vw, 64px)', maxWidth: 'min(800px, 100%)' }}>
           De ta voix au cash, sans repasser au bureau
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))',
+          gap: 'clamp(12px, 2vw, 20px)',
+        }}>
           {steps.map((s, i) => {
             const Icon = DepIcon[s.icon];
             return (
-              <div key={s.n} style={{
+              <div key={s.title} style={{
                 background: 'var(--dep-black-2)', color: 'var(--dep-paper)', borderRadius: 20,
                 border: '1px solid var(--dep-line-dark)',
-                padding: 28, position: 'relative',
-                minHeight: 280, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                padding: 'clamp(20px, 3vw, 28px)', position: 'relative',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 14,
               }}>
-                <div className="mono" style={{ fontSize: 13, color: 'var(--dep-grey-3)', letterSpacing: '0.1em' }}>{s.n}</div>
+                <span className="mono" style={{
+                  position: 'absolute', top: 14, left: 16, fontSize: 12,
+                  color: 'var(--dep-grey-2)', letterSpacing: '0.1em',
+                }}>{String(i + 1).padStart(2, '0')}</span>
                 <div style={{
-                  width: 56, height: 56, borderRadius: 14,
-                  background: 'var(--dep-black)', color: 'var(--dep-yellow)',
+                  width: 'clamp(64px, 11vw, 88px)', height: 'clamp(64px, 11vw, 88px)', borderRadius: '50%',
+                  background: 'var(--dep-yellow)', color: 'var(--dep-black)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '24px 0 20px',
+                  marginTop: 18,
+                  boxShadow: '0 0 0 1px rgba(245,197,24,0.4), 0 12px 32px -8px rgba(245,197,24,0.35)',
                 }}>
-                  <Icon style={{ width: 26, height: 26 }} />
+                  <Icon style={{ width: 'clamp(28px, 5vw, 38px)', height: 'clamp(28px, 5vw, 38px)' }} />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ fontSize: 'clamp(18px, 2.8vw, 28px)', fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
-                  <p style={{ fontSize: 14, color: 'var(--dep-grey-4)', lineHeight: 1.5 }}>{s.body}</p>
-                </div>
-                {i < 3 && (
-                  <DepIcon.arrow style={{
-                    width: 24, height: 24, position: 'absolute', top: 28, right: 24,
-                    color: 'var(--dep-yellow)',
-                  }} />
-                )}
+                <h3 style={{ fontSize: 'clamp(18px, 2.4vw, 24px)', fontWeight: 700, letterSpacing: '-0.025em' }}>{s.title}</h3>
+                <p style={{ fontSize: 13, color: 'var(--dep-grey-3)', lineHeight: 1.4, margin: 0 }}>{s.sub}</p>
               </div>
             );
           })}
@@ -423,24 +423,28 @@ function LandingVignettes() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 24 }}>
           {v.map((x, i) => (
             <div key={i} style={{
-              background: 'var(--dep-white)', color: 'var(--dep-black)', borderRadius: 20,
-              border: '1px solid var(--dep-line-light)', padding: 0, overflow: 'hidden',
+              background: 'var(--dep-black-2)', color: 'var(--dep-paper)', borderRadius: 20,
+              border: '1px solid var(--dep-line-dark)', padding: 0, overflow: 'hidden',
+              boxShadow: '0 24px 48px -20px rgba(0,0,0,0.6)',
             }}>
               <div style={{
-                padding: '24px 28px', background: 'var(--dep-paper-2)', color: 'var(--dep-black)',
-                borderBottom: '1px solid var(--dep-line-light)',
+                padding: 'clamp(18px, 3vw, 24px) clamp(20px, 3vw, 28px)', background: 'var(--dep-black)', color: 'var(--dep-paper)',
+                borderBottom: '1px solid var(--dep-line-dark)',
               }}>
-                <div className="mono" style={{ fontSize: 11, color: 'var(--dep-grey-2)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8 }}>Avant DEP</div>
-                <div style={{ fontSize: 'clamp(13px, 1.7vw, 17px)', color: 'var(--dep-grey-1)', textDecoration: 'line-through', textDecorationColor: 'rgba(0,0,0,0.35)', lineHeight: 1.45 }}>
+                <div className="mono" style={{ fontSize: 11, color: 'var(--dep-red)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 16, height: 2, background: 'var(--dep-red)', borderRadius: 2 }} />
+                  Avant DEP
+                </div>
+                <div style={{ fontSize: 'clamp(14px, 1.7vw, 17px)', color: 'var(--dep-grey-3)', textDecoration: 'line-through', textDecorationColor: 'var(--dep-red)', textDecorationThickness: 2, lineHeight: 1.45 }}>
                   {x.before}
                 </div>
               </div>
-              <div style={{ padding: '24px 28px', background: 'var(--dep-white)' }}>
-                <div className="mono" style={{ fontSize: 11, color: 'var(--dep-black)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span className="dep-cable" style={{ width: 16 }} />
+              <div style={{ padding: 'clamp(18px, 3vw, 24px) clamp(20px, 3vw, 28px)', background: 'var(--dep-yellow)', color: 'var(--dep-black)' }}>
+                <div className="mono" style={{ fontSize: 11, color: 'var(--dep-black)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700 }}>
+                  <DepIcon.check style={{ width: 14, height: 14 }} />
                   Avec DEP
                 </div>
-                <div style={{ fontSize: 'clamp(14px, 1.9vw, 19px)', color: 'var(--dep-black)', fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.01em' }}>
+                <div style={{ fontSize: 'clamp(15px, 1.9vw, 19px)', color: 'var(--dep-black)', fontWeight: 700, lineHeight: 1.4, letterSpacing: '-0.01em' }}>
                   {x.after}
                 </div>
               </div>
@@ -476,7 +480,7 @@ function LandingPricing() {
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 32 }}>
-              <span className="mono" style={{ fontSize: 88, fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1 }}>100</span>
+              <span className="mono" style={{ fontSize: 'clamp(56px, 12vw, 88px)', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1 }}>100</span>
               <span style={{ fontSize: 'clamp(18px, 2.8vw, 28px)', fontWeight: 600 }}>€</span>
               <span style={{ fontSize: 16, color: 'rgba(0,0,0,0.6)' }}>/ mois HT</span>
             </div>
@@ -618,7 +622,7 @@ function LandingFooter() {
     <footer style={{ background: 'var(--dep-black)', color: 'var(--dep-grey-3)', padding: 'clamp(32px, 6vw, 48px) clamp(20px, 5vw, 64px) clamp(40px, 7vw, 64px)', borderTop: '1px solid var(--dep-line-dark)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 'clamp(20px, 4vw, 48px)', flexWrap: 'wrap' }}>
         <div>
-          <Image src="/dep-logo.png" alt="DEP" width={120} height={40} priority style={{ width: "auto", height: 40 }} />
+          <Image src="/dep-logo.png" alt="DEP" width={120} height={40} priority style={{ width: "auto", height: 'clamp(28px, 5vw, 40px)', mixBlendMode: 'screen' }} />
           <p style={{ marginTop: 16, fontSize: 13, maxWidth: 'min(320px, 100%)', lineHeight: 1.5 }}>
             DEP. Devis Électricité Plateforme. Le SaaS terrain pour électriciens FR. Conçu sur chantier avec Maelig, électricien indépendant
           </p>
