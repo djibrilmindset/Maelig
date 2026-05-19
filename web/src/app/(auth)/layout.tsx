@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { DepLogo } from "@/components/brand/dep-logo"
+import { DepTypingDots } from "@/components/dep/primitives"
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,7 +12,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="relative z-10 max-w-md p-10">
           <DepLogo size={56} withWordmark />
           <h2 className="mt-10 font-display text-4xl font-bold leading-tight">
-            Parlez. <span className="text-electric">C&apos;est facturé.</span>
+            Parlez<DepTypingDots size={14} /> <span className="text-electric">C&apos;est facturé.</span>
           </h2>
           <p className="mt-4 text-muted">
             Vos devis et factures à la voix. Conçu pour les électriciens qui

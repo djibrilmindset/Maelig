@@ -314,6 +314,53 @@ export function DepWaveform({
   )
 }
 
+/* ─────────── Typing dots arc-en-ciel ─────────── */
+/* "Parlez<DepTypingDots /> C'est facturé" — montre que ça écoute en live,
+   3 dots rebondissants en cascade, couleurs wire-* (rouge / jaune / bleu / vert).
+   À utiliser à côté du verbe "Parlez" partout sur le site. */
+export function DepTypingDots({
+  size = 12,
+  inline = true,
+}: {
+  size?: number
+  inline?: boolean
+}) {
+  const dots = [
+    { color: "var(--wire-red)",    delay: "0s" },
+    { color: "var(--dep-yellow)",  delay: "0.16s" },
+    { color: "var(--wire-blue)",   delay: "0.32s" },
+    { color: "var(--wire-green)",  delay: "0.48s" },
+  ]
+  return (
+    <span
+      aria-label="indicateur de dictée en cours"
+      style={{
+        display: inline ? "inline-flex" : "flex",
+        alignItems: "baseline",
+        gap: size * 0.35,
+        marginLeft: size * 0.3,
+        marginRight: size * 0.3,
+        verticalAlign: "baseline",
+      }}
+    >
+      {dots.map((d, i) => (
+        <span
+          key={i}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: "50%",
+            background: d.color,
+            display: "inline-block",
+            animation: `dep-typing-bounce 1.1s ease-in-out ${d.delay} infinite`,
+            boxShadow: `0 0 ${size * 0.6}px ${d.color}`,
+          }}
+        />
+      ))}
+    </span>
+  )
+}
+
 /* ─────────── Eyebrow with cable ─────────── */
 export function DepEyebrow({
   children,

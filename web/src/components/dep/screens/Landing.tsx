@@ -3,7 +3,7 @@
 
 import { useState as useLState, useEffect as useLEffect, useRef as useLRef } from "react"
 import Image from "next/image"
-import { DepMagnetic, DepReveal, DepIcon } from "../primitives"
+import { DepMagnetic, DepReveal, DepIcon, DepTypingDots } from "../primitives"
 /* DEP — Landing V2 artboard.
    Full-bleed landing page rendered inside the canvas artboard.
    Dimensions: 1280 × 3400. Scrolls naturally inside the focus overlay. */
@@ -99,8 +99,8 @@ function LandingHero() {
 
         <DepReveal delay={120}>
           <h1 style={{ fontSize: 'clamp(40px, 9vw, 96px)', fontWeight: 700, letterSpacing: '-0.045em', lineHeight: 0.96, marginBottom: 32 }}>
-            Parlez.<br />
-            C'est <span style={{ color: 'var(--dep-yellow)', fontStyle: 'italic', fontWeight: 600 }}>facturé</span>
+            Parlez<DepTypingDots size={18} /><br />
+            C'est <span style={{ color: 'var(--dep-yellow)', fontStyle: 'italic', fontWeight: 600 }}>facturé</span>.
           </h1>
         </DepReveal>
 
@@ -600,7 +600,7 @@ function LandingCTAFinal() {
       <div style={{ position: 'relative', zIndex: 3, maxWidth: 'min(1000px, 100%)', margin: '0 auto' }}>
         <h2 style={{ fontSize: 'clamp(36px, 8vw, 80px)', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 48 }}>
           Ton prochain devis,<br />
-          tu le <em style={{ color: 'var(--dep-yellow)', fontStyle: 'italic' }}>dictes</em> en 4 min<br />
+          tu le <em style={{ color: 'var(--dep-yellow)', fontStyle: 'italic' }}>dictes</em><DepTypingDots size={16} />en 4 min<br />
           ou tu le tapes une heure ?
         </h2>
         <DepMagnetic strength={0.3}>

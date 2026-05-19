@@ -270,6 +270,12 @@ body {
   vertical-align: middle;
 }
 
+/* ── Typing dots arc-en-ciel "Parlez ..." indicator ── */
+@keyframes dep-typing-bounce {
+  0%, 70%, 100% { transform: translateY(0) scale(0.7); opacity: 0.55; }
+  35% { transform: translateY(-0.45em) scale(1.15); opacity: 1; }
+}
+
 /* ── Pulse rec dot (vocal enregistrement) ── */
 @keyframes dep-pulse-rec {
   0%   { box-shadow: 0 0 0 0 rgba(220,38,38,0.55); }
