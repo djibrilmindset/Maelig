@@ -38,20 +38,19 @@ export default function Home() {
             Pensé pour les chefs d&apos;entreprise, pas pour les développeurs
           </span>
 
-          <h1 className="mx-auto mt-7 max-w-4xl font-display text-5xl sm:text-7xl md:text-[88px] font-extrabold leading-[0.92] tracking-tight">
-            Rentrez{" "}
-            <span className="bg-gradient-to-br from-electric via-electric-soft to-electric-deep bg-clip-text text-transparent">
-              avant la nuit.
-            </span>{" "}
+          <h1 className="mx-auto mt-7 max-w-4xl font-display text-5xl sm:text-7xl md:text-[96px] font-extrabold leading-[0.9] tracking-tight">
+            Parlez.{" "}
             <br className="hidden md:block" />
-            Profitez des vôtres.
+            <span className="bg-gradient-to-br from-electric via-electric-soft to-electric-deep bg-clip-text text-transparent">
+              C&apos;est facturé.
+            </span>
           </h1>
 
           <p className="mx-auto mt-7 max-w-2xl text-lg sm:text-xl text-foreground/85 leading-relaxed">
-            DEP fait vos devis, traduit vos employés, relance vos clients.{" "}
-            <strong className="text-electric">Vous récupérez 1 journée entière chaque semaine.</strong>
+            Rentrez avant la nuit. Profitez des vôtres.{" "}
+            <strong className="text-electric">1 journée par semaine récupérée.</strong>
             <br className="hidden sm:block" />
-            Pour votre femme, vos enfants, et le silence du dimanche.
+            DEP fait vos devis, traduit vos employés, relance vos clients.
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
