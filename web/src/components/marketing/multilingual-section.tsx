@@ -1,7 +1,7 @@
 "use client"
 import { motion } from "framer-motion"
 import { ArrowRight, MessagesSquare } from "lucide-react"
-import { LANGUES } from "@/lib/langues"
+import { LANGUES_P0_P1 } from "@/lib/langues"
 
 /**
  * THE multilingual section.
@@ -56,7 +56,7 @@ export function MultilingualSection() {
         </p>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {LANGUES.map((l) => (
+          {LANGUES_P0_P1.map((l) => (
             <span
               key={l.code}
               className="inline-flex items-center gap-2 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-sm"

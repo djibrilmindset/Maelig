@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input, Label } from "@/components/ui/input"
 import { inviteSlave } from "@/lib/actions/team"
-import { LANGUES } from "@/lib/langues"
+import { getLanguageOptions } from "@/lib/langues"
 
 export function InviteForm() {
   const [pending, startTransition] = useTransition()
@@ -57,10 +57,14 @@ export function InviteForm() {
           value={form.langue_maternelle}
           onChange={(e) => setForm((f) => ({ ...f, langue_maternelle: e.target.value }))}
         >
-          {LANGUES.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.flag} {l.name_fr} · {l.native}
-            </option>
+          {getLanguageOptions().map(({ group, items }) => (
+            <optgroup key={group} label={group}>
+              {items.map((l) => (
+                <option key={l.code} value={l.code}>
+                  {l.flag} {l.name_fr} · {l.native}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         <p className="mt-2 text-xs text-muted">

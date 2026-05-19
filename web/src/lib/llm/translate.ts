@@ -16,23 +16,56 @@ export async function translateMessage(text: string, from: string, to: string): 
 
   const fromL = getLangue(from)
   const toL = getLangue(to)
+
+  // Pièges spécifiques :
+  // - cible darija : forcer dialecte maghrébin, jamais MSA
+  // - cible pt-PT : forcer portugais européen, jamais BR
+  // - langues subsahariennes (use_nllb_pipeline) : qualité dégradée → flag
+  const extra: string[] = []
+  if (toL.is_dialectal && toL.code === "ary") {
+    extra.push(
+      "ATTENTION : la cible est l'arabe dialectal MAGHRÉBIN (darija algéro-marocaine), PAS l'arabe standard (MSA). " +
+      "Utilise le vocabulaire courant des chantiers (cf. termes empruntés au français : zerda, briket, kafrour, etc.). " +
+      "Garde la phrase courte et orale.",
+    )
+  }
+  if (toL.code === "pt-PT") {
+    extra.push("ATTENTION : portugais EUROPÉEN (Portugal), pas brésilien. Vocabulaire et conjugaison de Lisbonne.")
+  }
+  if (toL.use_nllb_pipeline) {
+    extra.push("Cette langue est moins bien couverte par les LLMs. Sois prudent : si tu n'es pas sûr d'un terme technique, garde-le en français entre parenthèses.")
+  }
+
   const sys: ChatMessage = {
     role: "system",
     content:
-      `Tu es un traducteur professionnel BTP / chantier électrique. ` +
-      `Traduis le message suivant de ${fromL.name_fr} (${fromL.native}) vers ${toL.name_fr} (${toL.native}). ` +
-      `Préserve TOUS les termes techniques (prise, disjoncteur, NF C 15-100, kW, A, etc.). ` +
-      `Style direct et clair. INTERDIT : tiret demi-cadratin —, tiret cadratin ---. ` +
-      `Si nom propre (lieu, personne), garde-le tel quel. ` +
+      `Tu es un traducteur professionnel pour chantiers d'électricité en France. ` +
+      `Traduis ce message de ${fromL.name_fr} (${fromL.native}) vers ${toL.name_fr} (${toL.native}). ` +
+      `Préserve TOUS les termes techniques (prise, disjoncteur, NF C 15-100, kW, A, IP44, etc.). ` +
+      `Style direct, oral, comme à un collègue. INTERDIT : tiret demi-cadratin —, tiret cadratin ---. ` +
+      `Noms propres (lieu, personne) : garde-les tels quels. ` +
+      (extra.length ? `\n${extra.join("\n")}\n` : "") +
       `Réponds UNIQUEMENT avec la traduction, sans guillemets ni préambule.`,
   }
   const user: ChatMessage = { role: "user", content: text.slice(0, 3500) }
   const { text: out } = await dashscopeChat({
-    model: "qwen-turbo",
+    model: pickModel(toL),
     messages: [sys, user],
     temperature: 0.2,
   })
   return clean(out)
+}
+
+/**
+ * Routing modèle :
+ * - darija dialectal + berbère + langues subsahariennes : qwen-plus (meilleur sur dialectes)
+ * - Europe + portugais + turc : qwen-turbo (4× moins cher, qualité suffisante)
+ */
+function pickModel(target: { is_dialectal?: boolean; use_nllb_pipeline?: boolean; code: string }): string {
+  if (target.is_dialectal || target.use_nllb_pipeline || ["kab", "shi", "rif"].includes(target.code)) {
+    return "qwen-plus"
+  }
+  return "qwen-turbo"
 }
 
 /**
