@@ -56,7 +56,7 @@ export default function Home() {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button asChild variant="primary" size="lg" className="text-base">
               <Link href="/inscription" className="inline-flex items-center gap-2">
-                Récupérer mes weekends — 14 jours offerts
+                Essayer 14 jours offerts
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -65,7 +65,7 @@ export default function Home() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-2">
-            Aucune carte bancaire pour démarrer · Annulation en 1 clic · Garantie 30 jours
+            Aucune carte bancaire · Annulation en 1 clic
           </p>
 
           <div className="mt-16">
