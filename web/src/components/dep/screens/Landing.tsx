@@ -3,7 +3,7 @@
 
 import { useState as useLState, useEffect as useLEffect, useRef as useLRef } from "react"
 import Image from "next/image"
-import { DepMagnetic, DepReveal, DepIcon, DepTypingDots } from "../primitives"
+import { DepMagnetic, DepReveal, DepIcon, DepTypingDots, DepImpact } from "../primitives"
 /* DEP — Landing V2 artboard.
    Full-bleed landing page rendered inside the canvas artboard.
    Dimensions: 1280 × 3400. Scrolls naturally inside the focus overlay. */
@@ -99,8 +99,8 @@ function LandingHero() {
 
         <DepReveal delay={120}>
           <h1 style={{ fontSize: 'clamp(40px, 9vw, 96px)', fontWeight: 700, letterSpacing: '-0.045em', lineHeight: 0.96, marginBottom: 32 }}>
-            Parlez<DepTypingDots size={18} /><br />
-            C'est <span style={{ color: 'var(--dep-yellow)', fontStyle: 'italic', fontWeight: 600 }}>facturé</span>.
+            <DepImpact tone="action">Parlez</DepImpact><DepTypingDots size={18} /><br />
+            C'est <DepImpact tone="action">facturé</DepImpact>.
           </h1>
         </DepReveal>
 
@@ -109,8 +109,8 @@ function LandingHero() {
             fontSize: 'clamp(15px, 2.2vw, 22px)', lineHeight: 1.45, color: 'var(--dep-grey-4)',
             maxWidth: 'min(720px, 100%)', marginBottom: 48,
           }}>
-            Tu parles, ton devis sort. Tu valides, la facture part. Le client paie, t&apos;es payé.
-            En français, et dans 20 langues parlées sur tes chantiers
+            Tu <DepImpact tone="action">parles</DepImpact>, ton devis sort. Tu valides, la facture part. Le client paie, <DepImpact tone="gain">t&apos;es payé</DepImpact>.
+            En français, et dans <DepImpact tone="proof">20 langues</DepImpact> parlées sur tes chantiers
           </p>
         </DepReveal>
 
@@ -144,14 +144,14 @@ function LandingHero() {
                 <CountUp to={4} />
                 <span style={{ color: 'var(--dep-paper)' }}> min</span>
               </div>
-              <div style={{ fontSize: 13, color: 'var(--dep-grey-3)', marginTop: 4 }}>Devis envoyé depuis le chantier</div>
+              <div style={{ fontSize: 13, color: 'var(--dep-grey-3)', marginTop: 4 }}>Devis envoyé depuis le <DepImpact tone="action">chantier</DepImpact></div>
             </div>
             <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--dep-line-dark)' }} />
             <div>
               <div className="mono" style={{ fontSize: 'clamp(22px, 4vw, 40px)', fontWeight: 600, letterSpacing: '-0.04em' }}>
                 <CountUp to={29120} suffix=" €" />
               </div>
-              <div style={{ fontSize: 13, color: 'var(--dep-grey-3)', marginTop: 4 }}>Récupérés par patron en moyenne par an</div>
+              <div style={{ fontSize: 13, color: 'var(--dep-grey-3)', marginTop: 4 }}><DepImpact tone="gain">Récupérés</DepImpact> par patron en moyenne par an</div>
             </div>
             <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--dep-line-dark)' }} />
             <div>
@@ -192,7 +192,7 @@ function LandingMultilingue() {
             DEP fait le pont
           </h2>
           <p style={{ fontSize: 'clamp(14px, 1.9vw, 19px)', color: 'var(--dep-grey-4)', lineHeight: 1.55, maxWidth: 'min(520px, 100%)' }}>
-            Sur chantier, plus aucune consigne perdue. Plus aucun malentendu.
+            Sur chantier, <DepImpact tone="pain">plus aucune consigne perdue</DepImpact>. Plus aucun malentendu.
             Plus aucun retard pour cause de barrière de la langue
           </p>
         </div>
@@ -334,11 +334,11 @@ function LandingMath() {
             <div style={{ height: 1, background: 'var(--dep-line-light)', margin: '4px 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
               <span style={{ color: 'var(--dep-black)', fontWeight: 600 }}>Coût annuel admin</span>
-              <span className="tnum" style={{ fontSize: 'clamp(18px, 2.8vw, 28px)', fontWeight: 700, color: 'var(--dep-red)' }}>−29 120 €</span>
+              <span className="tnum dep-impact dep-impact--pain" style={{ fontSize: 'clamp(18px, 2.8vw, 28px)', fontWeight: 700 }}>−29 120 €</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', background: 'var(--dep-yellow-soft)', padding: '14px 16px', borderRadius: 12, marginTop: 6 }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'clamp(13px, 1.7vw, 17px)' }}>Avec DEP, tu récupères</span>
-              <span className="tnum" style={{ fontSize: 'clamp(18px, 2.8vw, 28px)', fontWeight: 700 }}>+29 120 €</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 'clamp(13px, 1.7vw, 17px)' }}>Avec DEP, tu <DepImpact tone="gain">récupères</DepImpact></span>
+              <span className="tnum dep-impact dep-impact--gain" style={{ fontSize: 'clamp(18px, 2.8vw, 28px)', fontWeight: 700 }}>+29 120 €</span>
             </div>
           </div>
         </div>
@@ -364,7 +364,7 @@ function LandingParcours() {
           <span className="dep-eyebrow">Parcours · 4 étapes · 4 minutes</span>
         </div>
         <h2 style={{ fontSize: 'clamp(28px, 5.5vw, 56px)', fontWeight: 700, letterSpacing: '-0.035em', lineHeight: 1.04, marginBottom: 'clamp(36px, 6vw, 64px)', maxWidth: 'min(800px, 100%)' }}>
-          De ta voix au cash, sans repasser au bureau
+          De ta <DepImpact tone="action">voix</DepImpact> au <DepImpact tone="gain">cash</DepImpact>, sans repasser au bureau
         </h2>
         <div style={{
           display: 'grid',
@@ -462,14 +462,14 @@ function LandingPricing() {
       <div style={{ maxWidth: 'min(1100px, 100%)', margin: '0 auto', position: 'relative', zIndex: 3 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
           <span className="dep-cable" />
-          <span className="dep-eyebrow dep-eyebrow--on-dark">Tarification · sans CB pour démarrer</span>
+          <span className="dep-eyebrow dep-eyebrow--on-dark">Tarification · <DepImpact tone="trust">sans CB</DepImpact> pour démarrer</span>
         </div>
         <h2 style={{ fontSize: 'clamp(32px, 6vw, 64px)', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 64 }}>
           Un prix.<br />Pas d'options.
         </h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 32, alignItems: 'stretch' }}>
-          <div style={{
+        <div className="dep-pricing-grid" style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 32, alignItems: 'stretch' }}>
+          <div className="dep-pricing-card" style={{
             background: 'var(--dep-yellow)', color: 'var(--dep-black)',
             borderRadius: 24, padding: 40, position: 'relative', overflow: 'hidden',
           }}>
@@ -484,7 +484,7 @@ function LandingPricing() {
               <span style={{ fontSize: 'clamp(18px, 2.8vw, 28px)', fontWeight: 600 }}>€</span>
               <span style={{ fontSize: 16, color: 'rgba(0,0,0,0.6)' }}>/ mois HT</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(300px, 100%), 1fr))', gap: '10px 24px', marginBottom: 32 }}>
+            <div className="dep-pricing-features" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))', gap: '10px 24px', marginBottom: 32 }}>
               {['Vocal devis illimité', 'Factures Factur-X 2026', 'Relances auto J+30', 'Catalogue articles', 'Multilingue 20 langues', 'Incidents chantier', 'Signature client mobile', 'Support email 24h'].map(f => (
                 <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 500 }}>
                   <DepIcon.check style={{ width: 16, height: 16, flexShrink: 0 }} />
@@ -507,7 +507,7 @@ function LandingPricing() {
             </p>
           </div>
 
-          <div style={{
+          <div className="dep-pricing-card" style={{
             border: '1px solid var(--dep-line-dark)', borderRadius: 24,
             padding: 40, background: 'var(--dep-black-2)', color: 'var(--dep-paper)',
           }}>
@@ -600,8 +600,8 @@ function LandingCTAFinal() {
       <div style={{ position: 'relative', zIndex: 3, maxWidth: 'min(1000px, 100%)', margin: '0 auto' }}>
         <h2 style={{ fontSize: 'clamp(36px, 8vw, 80px)', fontWeight: 700, letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 48 }}>
           Ton prochain devis,<br />
-          tu le <em style={{ color: 'var(--dep-yellow)', fontStyle: 'italic' }}>dictes</em><DepTypingDots size={16} />en 4 min<br />
-          ou tu le tapes une heure ?
+          tu le <DepImpact tone="action">dictes</DepImpact><DepTypingDots size={16} />en <DepImpact tone="proof">4 min</DepImpact><br />
+          ou tu le <DepImpact tone="pain">tapes une heure</DepImpact> ?
         </h2>
         <DepMagnetic strength={0.3}>
           <a href="/inscription" className="dep-btn dep-btn--primary dep-btn--lg" style={{ textDecoration: 'none', fontSize: 'clamp(14px, 2vw, 20px)', padding: '24px 36px' }}>
@@ -610,7 +610,7 @@ function LandingCTAFinal() {
           </a>
         </DepMagnetic>
         <p className="mono" style={{ fontSize: 13, color: 'var(--dep-grey-3)', marginTop: 24, letterSpacing: '0.08em' }}>
-          14 jours · Pas de CB · Résiliation libre · RGPD strict
+          <DepImpact tone="proof">14 jours</DepImpact> · <DepImpact tone="trust">Pas de CB</DepImpact> · Résiliation libre · <DepImpact tone="trust">RGPD strict</DepImpact>
         </p>
       </div>
     </section>

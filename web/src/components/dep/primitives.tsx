@@ -361,6 +361,42 @@ export function DepTypingDots({
   )
 }
 
+/* ─────────── Impact words ───────────
+   Colorise les mots-clés selon leur charge émotionnelle pour rendre
+   la lecture instinctive. 5 catégories : gain / pain / action / proof / trust. */
+type ImpactTone = "gain" | "pain" | "action" | "proof" | "trust"
+export function DepImpact({
+  tone,
+  children,
+  underline = false,
+}: {
+  tone: ImpactTone
+  children: ReactNode
+  underline?: boolean
+}) {
+  const styles: Record<ImpactTone, React.CSSProperties> = {
+    gain:   { color: "var(--wire-green)", fontWeight: 700 },
+    pain:   { color: "var(--wire-red)",   fontWeight: 600 },
+    action: { color: "var(--dep-yellow)", fontWeight: 700, fontStyle: "italic" },
+    proof:  { color: "var(--dep-yellow)", fontFamily: "var(--font-mono)", fontWeight: 600, letterSpacing: "-0.02em" },
+    trust:  { color: "var(--wire-blue)",  fontWeight: 600 },
+  }
+  return (
+    <span
+      className={`dep-impact dep-impact--${tone}`}
+      style={{
+        ...styles[tone],
+        textDecoration: underline ? "underline" : "none",
+        textDecorationThickness: "2px",
+        textUnderlineOffset: "0.18em",
+        textDecorationColor: "currentColor",
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
 /* ─────────── Eyebrow with cable ─────────── */
 export function DepEyebrow({
   children,

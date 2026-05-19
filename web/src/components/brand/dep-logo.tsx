@@ -22,7 +22,7 @@ export function DepLogo({
         height={size}
         priority
         className="object-contain"
-        style={{ height: size, width: "auto", mixBlendMode: "screen" }}
+        style={{ height: size, width: "auto" }}
       />
       {withWordmark ? (
         <span className="hidden sm:flex flex-col leading-none">

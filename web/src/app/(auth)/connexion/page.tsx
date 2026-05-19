@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -49,6 +49,24 @@ function ConnexionInner() {
   const router = useRouter()
   const params = useSearchParams()
   const [magicSent, setMagicSent] = useState(false)
+
+  // Auto-déclenche l'OAuth si /connexion?force_oauth=google|apple
+  // (utilisé par /verifier-email pour "Continuer avec ... à la place")
+  useEffect(() => {
+    const force = params.get("force_oauth")
+    if (force !== "google" && force !== "apple") return
+    const supabase = createSupabaseBrowserClient()
+    supabase.auth.signInWithOAuth({
+      provider: force,
+      options: {
+        redirectTo: `${window.location.origin}/app`,
+        queryParams: force === "google" ? { access_type: "offline", prompt: "consent" } : undefined,
+      },
+    }).then(({ error }) => {
+      if (error) toast.error(`Connexion ${force} impossible`, { description: error.message })
+    })
+  }, [params])
+
   const { register, handleSubmit, formState: { errors, isSubmitting }, getValues } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },

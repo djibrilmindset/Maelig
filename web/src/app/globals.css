@@ -168,10 +168,36 @@ img, svg, video, iframe { max-width: 100%; height: auto; }
   [style*="gap: clamp"] { gap: clamp(12px, 3vw, 24px) !important; }
   /* Headers / titres très large : ne dépasse jamais le screen */
   h1, h2, h3 { word-break: break-word; overflow-wrap: anywhere; }
-  /* Cards trop large : padding inner réduit */
-  [style*="padding: '36px 40px'"], [style*="padding: '40px"] { padding: clamp(20px, 5vw, 40px) !important; }
   /* Phone frames fixed widths */
   [style*="width: 'min(390px, 100%)'"] { width: 100% !important; }
+}
+
+/* ── Pricing grid : stack avant que les cards soient cramped ──
+   Card padding 40 + features inline = besoin minimum ~360px par card.
+   Avec gap 32 + section padding 28, on stacke dès que viewport < 820 */
+@media (max-width: 820px) {
+  .dep-pricing-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+  .dep-pricing-card {
+    padding: clamp(22px, 6vw, 32px) !important;
+    border-radius: 20px !important;
+  }
+  .dep-pricing-features {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  /* Le prix géant ne doit jamais déborder */
+  .dep-pricing-card .mono { word-break: keep-all; }
+  /* "/ employé / mois" : autorise wrap propre */
+  .dep-pricing-card [style*="baseline"] { flex-wrap: wrap; row-gap: 4px; }
+}
+
+/* Très petit écran (<400px) : encore plus compact */
+@media (max-width: 400px) {
+  .dep-pricing-card { padding: 20px !important; }
+  .dep-pricing-card h3 { font-size: clamp(18px, 5vw, 22px) !important; }
 }
 
 @media (max-width: 480px) {
@@ -259,6 +285,18 @@ body {
   );
   background-size: 200% 100%;
   animation: flow 6s linear infinite;
+}
+
+/* ── Impact words (DepImpact) ──
+   Hiérarchise instinctivement les mots à forte charge. */
+.dep-impact { transition: opacity 0.2s ease; }
+.dep-impact--gain   { text-shadow: 0 0 18px color-mix(in srgb, var(--wire-green) 25%, transparent); }
+.dep-impact--pain   { text-shadow: 0 0 14px color-mix(in srgb, var(--wire-red) 18%, transparent); }
+.dep-impact--action { text-shadow: 0 0 20px color-mix(in srgb, var(--dep-yellow) 30%, transparent); }
+.dep-impact--proof  { font-variant-numeric: tabular-nums; }
+.dep-impact--trust  { text-shadow: 0 0 14px color-mix(in srgb, var(--wire-blue) 22%, transparent); }
+@media (prefers-reduced-motion: reduce) {
+  .dep-impact { text-shadow: none !important; }
 }
 
 /* ── Câble jaune accent (eyebrows) ── */

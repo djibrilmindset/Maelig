@@ -15,6 +15,7 @@ import {
   Sparkles,
   ShieldCheck,
   AlertTriangle,
+  Shield,
 } from "lucide-react"
 import { DepLogo } from "@/components/brand/dep-logo"
 import { cn, initials } from "@/lib/utils"
@@ -40,6 +41,7 @@ const NAV = [
   { href: "/app/parametres/equipe", label: "Mon équipe", Icon: Users },
   { type: "section", label: "Compte" },
   { href: "/app/parametres", label: "Paramètres", Icon: Settings },
+  { href: "/app/admin", label: "Admin DEP", Icon: Shield, adminOnly: true },
 ] as const
 
 export function Sidebar({ profile, org }: { profile: ProfileLite | null; org: OrgLite | null }) {
@@ -62,8 +64,9 @@ export function Sidebar({ profile, org }: { profile: ProfileLite | null; org: Or
               </div>
             )
           }
-          const navItem = item as { href: string; label: string; Icon: typeof LayoutDashboard; accent?: boolean; ownerOnly?: boolean; employeeAccent?: boolean }
+          const navItem = item as { href: string; label: string; Icon: typeof LayoutDashboard; accent?: boolean; ownerOnly?: boolean; employeeAccent?: boolean; adminOnly?: boolean }
           if (navItem.ownerOnly && profile?.role === "slave") return null
+          if (navItem.adminOnly && profile?.role !== "admin_dep") return null
           return (
             <Link
               key={navItem.href}

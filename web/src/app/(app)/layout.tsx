@@ -10,6 +10,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/connexion")
 
+  // OAuth (Google/Apple) → email déjà vérifié par le provider.
+  // Email/password → bloquer tant que email_confirmed_at est null.
+  const provider = (user.app_metadata?.provider as string) ?? "email"
+  if (provider === "email" && !user.email_confirmed_at) {
+    redirect("/verifier-email")
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, email, role, org_id")
