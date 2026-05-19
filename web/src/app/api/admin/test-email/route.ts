@@ -3,7 +3,7 @@ import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
 
-const ADMIN_EMAILS = ["ayouneslead@gmail.com", "djibrilmindset@gmail.com"]
+const ADMIN_EMAILS = ["ayouneslead@gmail.com", "djibrilmindset@gmail.com", "djibrilsylearn@gmail.com"]
 
 const Body = z.object({
   recipient: z.string().email(),

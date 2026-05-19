@@ -1,297 +1,155 @@
-import { redirect } from "next/navigation"
-import { createSupabaseServerClient } from "@/lib/supabase/server"
-import { Users, Mail, Apple, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react"
-import { Card, CardHeader, CardTitle, CardDescription, Badge } from "@/components/ui/card"
-import { AdminTabs } from "./admin-tabs"
-import { TestEmailPanel } from "./test-email-panel"
+import Link from "next/link"
+import { Briefcase, HardHat, Shield, MailCheck, ArrowUpRight, TrendingUp, AlertTriangle, Euro } from "lucide-react"
+import { Card, CardTitle, CardDescription, Badge } from "@/components/ui/card"
+import { AdminNav } from "./admin-nav"
+import { requireAdmin, formatEUR } from "./_lib"
 
 export const dynamic = "force-dynamic"
 
-const ADMIN_EMAILS = ["ayouneslead@gmail.com", "djibrilmindset@gmail.com"]
-
-type SignupRow = {
-  id: string
-  user_id: string | null
-  email: string
-  provider: string
-  full_name: string | null
-  company: string | null
-  org_id: string | null
-  org_nom: string | null
-  subscription_status: string | null
-  trial_ends_at: string | null
-  is_email_confirmed: boolean
-  email_confirmed_at: string | null
-  signed_up_at: string
-  last_sign_in_at: string | null
-  role: string | null
-  account_state: string
+type RoleStats = {
+  total_patrons: number
+  total_employes: number
+  total_admins: number
+  orgs_trialing: number
+  orgs_paying: number
+  orgs_past_due: number
+  ca_total: number
+  devis_signes_total: number
+  incidents_ouverts_total: number
+  nouveaux_24h: number
+  nouveaux_7d: number
 }
 
-type Stats = {
-  total_signups: number
-  confirmed: number
-  pending_email: number
-  via_google: number
-  via_apple: number
-  via_email: number
-  last_24h: number
-  last_7d: number
-  last_30d: number
-}
+export default async function AdminOverviewPage() {
+  const { supabase } = await requireAdmin()
 
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>
-}) {
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/connexion")
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, email")
-    .eq("id", user.id)
-    .maybeSingle()
-
-  // Gate strict : admin_dep ou email whitelist
-  const isAdmin = profile?.role === "admin_dep" || ADMIN_EMAILS.includes((user.email || "").toLowerCase())
-  if (!isAdmin) redirect("/app")
-
-  const tab = (await searchParams).tab ?? "recensement"
-
-  const [{ data: signups }, { data: statsRow }, { data: emailLog }] = await Promise.all([
-    supabase.from("v_admin_signups").select("*").limit(200),
+  const [{ data: stats }, { data: signupsStats }] = await Promise.all([
+    supabase.from("v_admin_role_stats").select("*").maybeSingle(),
     supabase.from("v_admin_signups_stats").select("*").maybeSingle(),
-    supabase.from("email_test_log").select("*").order("sent_at", { ascending: false }).limit(50),
   ])
 
-  const rows = (signups ?? []) as SignupRow[]
-  const stats = (statsRow ?? null) as Stats | null
+  const s = (stats ?? {}) as Partial<RoleStats>
 
   return (
     <div className="max-w-7xl mx-auto p-6 sm:p-10 space-y-8">
       <header>
         <span className="text-xs uppercase tracking-[0.18em] text-muted">Admin DEP · accès restreint</span>
         <h1 className="mt-1 font-display text-3xl sm:text-4xl font-bold tracking-tight">
-          Recensement & <span className="text-electric">délivrabilité</span>
+          Vue d&apos;<span className="text-electric">ensemble</span>
         </h1>
-        <p className="mt-2 text-muted">
-          Toutes les créations de comptes en temps réel, et un atelier pour tester chaque email transactionnel
-        </p>
+        <p className="mt-2 text-muted">Toute la plateforme en un coup d&apos;œil. Clique sur une catégorie pour entrer dans le détail.</p>
       </header>
 
-      <AdminTabs active={tab} />
+      <AdminNav active="overview" />
 
-      {tab === "delivrabilite" ? (
-        <DeliveryTab logs={emailLog ?? []} currentUserEmail={user.email!} />
-      ) : (
-        <RecensementTab rows={rows} stats={stats} />
-      )}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KpiCard label="CA encaissé" value={formatEUR(s.ca_total ?? 0)} sub={`${s.devis_signes_total ?? 0} devis signés`} Icon={Euro} tone="success" />
+        <KpiCard label="Patrons trialing" value={s.orgs_trialing ?? 0} sub={`${s.orgs_paying ?? 0} payants`} Icon={TrendingUp} tone="electric" />
+        <KpiCard label="Past due" value={s.orgs_past_due ?? 0} sub="à relancer Stripe" Icon={AlertTriangle} tone={(s.orgs_past_due ?? 0) > 0 ? "danger" : "neutral"} />
+        <KpiCard label="Incidents ouverts" value={s.incidents_ouverts_total ?? 0} sub={`${s.nouveaux_24h ?? 0} signups 24h`} Icon={AlertTriangle} tone={(s.incidents_ouverts_total ?? 0) > 5 ? "warning" : "neutral"} />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CategoryCard
+          href="/app/admin/patrons"
+          Icon={Briefcase}
+          title="Patrons"
+          subtitle="Chefs d'entreprise"
+          count={s.total_patrons ?? 0}
+          accent="electric"
+          desc="Tous les comptes propriétaires. Org, abonnement, CA, équipe et activité."
+        />
+        <CategoryCard
+          href="/app/admin/employes"
+          Icon={HardHat}
+          title="Employés"
+          subtitle="Comptes esclaves (slave)"
+          count={s.total_employes ?? 0}
+          accent="info"
+          desc="Compagnons connectés au chat traduit + module incidents. Patron rattaché visible."
+        />
+        <CategoryCard
+          href="/app/admin/admins"
+          Icon={Shield}
+          title="Admins DEP"
+          subtitle="Super-utilisateurs"
+          count={s.total_admins ?? 0}
+          accent="warning"
+          desc="Maelig + Djibril. Voient tout, peuvent tester la délivrabilité."
+        />
+      </div>
+
+      <Link
+        href="/app/admin/delivrabilite"
+        className="group flex items-center justify-between rounded-[var(--radius-lg)] border border-border bg-surface/40 hover:bg-surface-2/40 p-5 transition-colors"
+      >
+        <div className="flex items-center gap-4">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-electric/15 text-electric">
+            <MailCheck className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="font-display font-semibold">Tester la délivrabilité email</p>
+            <p className="text-sm text-muted">Envoie un email de test (confirmation, magic link, reset, invite) et vérifie les bounces.</p>
+          </div>
+        </div>
+        <ArrowUpRight className="h-5 w-5 text-muted group-hover:text-electric transition-colors" />
+      </Link>
+
+      <Card className="bg-electric/5 border-electric/20">
+        <div className="flex items-start gap-3">
+          <Badge tone="electric">Recensement live</Badge>
+          <div>
+            <CardTitle className="text-base">Signups récents</CardTitle>
+            <CardDescription className="mt-1">
+              {signupsStats?.last_24h ?? 0} sur 24h · {signupsStats?.last_7d ?? 0} sur 7 jours · {signupsStats?.last_30d ?? 0} sur 30 jours · {signupsStats?.confirmed ?? 0} confirmés sur {signupsStats?.total_signups ?? 0} total
+            </CardDescription>
+          </div>
+        </div>
+      </Card>
     </div>
   )
 }
 
-function StatCard({ label, value, sub, tone = "neutral" }: { label: string; value: number | string; sub?: string; tone?: "neutral" | "electric" | "success" | "danger" }) {
-  const toneColor = {
+function KpiCard({ label, value, sub, Icon, tone = "neutral" }: { label: string; value: number | string; sub?: string; Icon: typeof Briefcase; tone?: "neutral" | "electric" | "success" | "warning" | "danger" }) {
+  const colors = {
     neutral: "text-foreground",
     electric: "text-electric",
     success: "text-success",
+    warning: "text-warning",
     danger: "text-danger",
   }[tone]
   return (
     <Card className="!p-5">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-muted-2">{label}</p>
-      <p className={`mt-2 font-display text-3xl font-bold tabular-nums ${toneColor}`}>{value}</p>
+      <div className="flex items-start justify-between">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-2">{label}</p>
+        <Icon className={`h-4 w-4 ${colors}`} />
+      </div>
+      <p className={`mt-2 font-display text-3xl font-bold tabular-nums ${colors}`}>{value}</p>
       {sub ? <p className="mt-1 text-xs text-muted">{sub}</p> : null}
     </Card>
   )
 }
 
-function RecensementTab({ rows, stats }: { rows: SignupRow[]; stats: Stats | null }) {
+function CategoryCard({ href, Icon, title, subtitle, count, desc, accent }: { href: string; Icon: typeof Briefcase; title: string; subtitle: string; count: number; desc: string; accent: "electric" | "info" | "warning" }) {
+  const accents = {
+    electric: "bg-electric/15 text-electric border-electric/30 group-hover:bg-electric/25",
+    info:     "bg-info/15 text-info border-info/30 group-hover:bg-info/25",
+    warning:  "bg-warning/15 text-warning border-warning/30 group-hover:bg-warning/25",
+  }[accent]
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total comptes" value={stats?.total_signups ?? 0} sub={`${stats?.last_7d ?? 0} sur 7j`} tone="electric" />
-        <StatCard label="Confirmés" value={stats?.confirmed ?? 0} tone="success" sub={`${stats?.pending_email ?? 0} en attente`} />
-        <StatCard label="Google" value={stats?.via_google ?? 0} sub={`Email: ${stats?.via_email ?? 0}`} />
-        <StatCard label="Apple" value={stats?.via_apple ?? 0} sub={`24h: ${stats?.last_24h ?? 0}`} />
+    <Link href={href} className="group block rounded-[var(--radius-lg)] border border-border bg-surface/40 hover:bg-surface-2/40 p-6 transition-colors">
+      <div className="flex items-start justify-between mb-4">
+        <span className={`grid h-12 w-12 place-items-center rounded-[14px] border transition-colors ${accents}`}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <ArrowUpRight className="h-5 w-5 text-muted-2 group-hover:text-foreground transition-colors" />
       </div>
-
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle>Derniers inscrits</CardTitle>
-            <CardDescription>200 lignes max · triés par date d&apos;inscription · source : signup_events + profiles + orgs</CardDescription>
-          </div>
-          <Badge tone="electric">{rows.length}</Badge>
-        </CardHeader>
-
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-sm">
-            <thead className="text-left text-[11px] uppercase tracking-[0.14em] text-muted-2 border-b border-border">
-              <tr>
-                <th className="py-3 pr-4 font-medium">Email · Nom</th>
-                <th className="py-3 pr-4 font-medium">Source</th>
-                <th className="py-3 pr-4 font-medium">Org</th>
-                <th className="py-3 pr-4 font-medium">État compte</th>
-                <th className="py-3 pr-4 font-medium">Inscrit</th>
-                <th className="py-3 pr-4 font-medium">Dernière connexion</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted">Aucun signup pour le moment</td>
-                </tr>
-              ) : null}
-              {rows.map((r) => (
-                <tr key={r.id} className="hover:bg-surface-2/40">
-                  <td className="py-3 pr-4">
-                    <div className="font-medium truncate max-w-[260px]">{r.email}</div>
-                    <div className="text-xs text-muted truncate max-w-[260px]">
-                      {r.full_name ?? "—"} {r.company ? `· ${r.company}` : ""}
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <ProviderBadge provider={r.provider} />
-                  </td>
-                  <td className="py-3 pr-4">
-                    <div className="truncate max-w-[200px]">{r.org_nom ?? <span className="text-muted-2">—</span>}</div>
-                    <div className="text-xs text-muted">{r.subscription_status ?? ""}</div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <AccountStateBadge state={r.account_state} confirmed={r.is_email_confirmed} />
-                  </td>
-                  <td className="py-3 pr-4 text-xs text-muted whitespace-nowrap">{formatRelative(r.signed_up_at)}</td>
-                  <td className="py-3 pr-4 text-xs text-muted whitespace-nowrap">{r.last_sign_in_at ? formatRelative(r.last_sign_in_at) : <span className="text-muted-2">Jamais</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
+      <p className="text-[11px] uppercase tracking-[0.18em] text-muted-2">{subtitle}</p>
+      <h3 className="mt-1 font-display text-2xl font-bold tracking-tight flex items-baseline gap-2">
+        {title}
+        <span className="font-mono text-muted text-base tabular-nums">{count}</span>
+      </h3>
+      <p className="mt-3 text-sm text-muted leading-relaxed">{desc}</p>
+    </Link>
   )
-}
-
-function DeliveryTab({ logs, currentUserEmail }: { logs: Array<Record<string, unknown>>; currentUserEmail: string }) {
-  return (
-    <div className="space-y-6">
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 items-start">
-        <TestEmailPanel defaultRecipient={currentUserEmail} />
-
-        <Card className="!p-5">
-          <CardTitle className="text-base">Pourquoi ce panel ?</CardTitle>
-          <CardDescription className="mt-2">
-            Avant qu&apos;un patron BTP n&apos;arrive sur DEP, il faut être <strong className="text-foreground">absolument certain</strong> que :
-          </CardDescription>
-          <ul className="mt-4 space-y-2 text-sm text-foreground/85">
-            <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" /> L&apos;email de <strong>confirmation d&apos;inscription</strong> arrive en boîte principale (pas spam)</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" /> Le <strong>magic link</strong> fonctionne (1 clic = connecté)</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" /> L&apos;email de <strong>reset password</strong> arrive en moins de 30s</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="h-4 w-4 text-success mt-0.5 shrink-0" /> L&apos;email d&apos;<strong>invitation employé</strong> est lisible (chef d&apos;équipe pas forcément aisé avec l&apos;email)</li>
-          </ul>
-          <div className="mt-4 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground">
-            <AlertCircle className="inline h-3 w-3 mr-1" />
-            Si un test échoue : vérifier le SMTP custom dans Supabase Dashboard → Auth → SMTP Settings.
-          </div>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle>Historique des tests</CardTitle>
-            <CardDescription>50 derniers envois (tous opérateurs admin confondus)</CardDescription>
-          </div>
-          <Badge tone="electric">{logs.length}</Badge>
-        </CardHeader>
-
-        <div className="overflow-x-auto -mx-6 px-6">
-          <table className="w-full text-sm">
-            <thead className="text-left text-[11px] uppercase tracking-[0.14em] text-muted-2 border-b border-border">
-              <tr>
-                <th className="py-3 pr-4 font-medium">Quand</th>
-                <th className="py-3 pr-4 font-medium">Template</th>
-                <th className="py-3 pr-4 font-medium">Destinataire</th>
-                <th className="py-3 pr-4 font-medium">Statut</th>
-                <th className="py-3 pr-4 font-medium">Erreur</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {logs.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="py-8 text-center text-muted">Aucun test envoyé pour le moment</td>
-                </tr>
-              ) : null}
-              {logs.map((l) => {
-                const sentAt = (l.sent_at as string) ?? ""
-                const status = (l.status as string) ?? ""
-                return (
-                  <tr key={l.id as string} className="hover:bg-surface-2/40">
-                    <td className="py-3 pr-4 text-xs text-muted whitespace-nowrap">{formatRelative(sentAt)}</td>
-                    <td className="py-3 pr-4 font-medium">{l.template as string}</td>
-                    <td className="py-3 pr-4 text-xs">{l.recipient_email as string}</td>
-                    <td className="py-3 pr-4">
-                      <Badge tone={status === "sent" || status === "delivered" ? "success" : status === "failed" || status === "bounced" ? "danger" : "neutral"}>
-                        {status}
-                      </Badge>
-                    </td>
-                    <td className="py-3 pr-4 text-xs text-danger max-w-[260px] truncate">{(l.error_message as string | null) ?? ""}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
-  )
-}
-
-function ProviderBadge({ provider }: { provider: string }) {
-  if (provider === "google") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium">
-        <span className="h-2 w-2 rounded-full bg-[#4285F4]" /> Google
-      </span>
-    )
-  }
-  if (provider === "apple") {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium">
-        <Apple className="h-3 w-3" /> Apple
-      </span>
-    )
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-medium">
-      <Mail className="h-3 w-3" /> Email
-    </span>
-  )
-}
-
-function AccountStateBadge({ state, confirmed }: { state: string; confirmed: boolean }) {
-  if (!confirmed) return <Badge tone="warning"><AlertCircle className="h-3 w-3" /> Email non confirmé</Badge>
-  if (state === "trialing") return <Badge tone="info"><ShieldCheck className="h-3 w-3" /> Essai</Badge>
-  if (state === "paying") return <Badge tone="success"><CheckCircle2 className="h-3 w-3" /> Payant</Badge>
-  if (state === "past_due") return <Badge tone="danger">Impayé</Badge>
-  if (state === "canceled") return <Badge tone="neutral">Annulé</Badge>
-  return <Badge tone="neutral"><Users className="h-3 w-3" /> Confirmé</Badge>
-}
-
-function formatRelative(iso: string): string {
-  if (!iso) return "—"
-  const d = new Date(iso)
-  const diff = Date.now() - d.getTime()
-  const min = Math.floor(diff / 60_000)
-  if (min < 1) return "à l'instant"
-  if (min < 60) return `il y a ${min} min`
-  const h = Math.floor(min / 60)
-  if (h < 24) return `il y a ${h}h`
-  const day = Math.floor(h / 24)
-  if (day < 30) return `il y a ${day}j`
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
 }
