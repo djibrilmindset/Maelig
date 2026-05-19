@@ -303,7 +303,7 @@ function LandingMath() {
             <span className="mono tnum" style={{ background: 'var(--dep-yellow)', padding: '0 12px', borderRadius: 8, fontWeight: 700 }}>29 120 €</span> récupérés
             <br />par an, par patron
           </h2>
-          <p style={{ fontSize: 19, color: 'var(--dep-grey-1)', lineHeight: 1.6, maxWidth: 520, marginBottom: 32 }}>
+          <p style={{ fontSize: 19, color: 'var(--dep-black)', lineHeight: 1.6, maxWidth: 520, marginBottom: 32 }}>
             Tu passes 8h par semaine sur l'admin. Devis, factures, relances, planning équipe. À 70 €/h facturable, tu perds 560 € chaque semaine. Multiplié par 52 semaines, ça fait 29 120 € qui sortent de ta poche.
           </p>
           <p style={{ fontSize: 17, color: 'var(--dep-black)', fontWeight: 600 }}>
@@ -319,15 +319,15 @@ function LandingMath() {
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18, fontFamily: 'var(--font-mono)', fontSize: 16 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ color: 'var(--dep-grey-1)' }}>Admin par semaine</span>
+              <span style={{ color: 'var(--dep-black)' }}>Admin par semaine</span>
               <span className="tnum" style={{ fontSize: 22, fontWeight: 600 }}>8 h</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ color: 'var(--dep-grey-1)' }}>Tarif horaire facturable</span>
+              <span style={{ color: 'var(--dep-black)' }}>Tarif horaire facturable</span>
               <span className="tnum" style={{ fontSize: 22, fontWeight: 600 }}>70 €</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ color: 'var(--dep-grey-1)' }}>Semaines de travail</span>
+              <span style={{ color: 'var(--dep-black)' }}>Semaines de travail</span>
               <span className="tnum" style={{ fontSize: 22, fontWeight: 600 }}>52</span>
             </div>
             <div style={{ height: 1, background: 'var(--dep-line-light)', margin: '4px 0' }} />
@@ -355,7 +355,7 @@ function LandingParcours() {
   ];
   return (
     <section style={{
-      background: 'var(--dep-paper-2)', padding: '120px 64px',
+      background: 'var(--dep-black)', padding: '120px 64px',
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
@@ -370,12 +370,12 @@ function LandingParcours() {
             const Icon = DepIcon[s.icon];
             return (
               <div key={s.n} style={{
-                background: 'var(--dep-white)', borderRadius: 20,
-                border: '1px solid var(--dep-line-light)',
+                background: 'var(--dep-black-2)', borderRadius: 20,
+                border: '1px solid var(--dep-line-dark)',
                 padding: 28, position: 'relative',
                 minHeight: 280, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
               }}>
-                <div className="mono" style={{ fontSize: 13, color: 'var(--dep-grey-2)', letterSpacing: '0.1em' }}>{s.n}</div>
+                <div className="mono" style={{ fontSize: 13, color: 'var(--dep-grey-3)', letterSpacing: '0.1em' }}>{s.n}</div>
                 <div style={{
                   width: 56, height: 56, borderRadius: 14,
                   background: 'var(--dep-black)', color: 'var(--dep-yellow)',
@@ -386,7 +386,7 @@ function LandingParcours() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <h3 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 10 }}>{s.title}</h3>
-                  <p style={{ fontSize: 14, color: 'var(--dep-grey-1)', lineHeight: 1.5 }}>{s.body}</p>
+                  <p style={{ fontSize: 14, color: 'var(--dep-grey-4)', lineHeight: 1.5 }}>{s.body}</p>
                 </div>
                 {i < 3 && (
                   <DepIcon.arrow style={{
@@ -410,7 +410,7 @@ function LandingVignettes() {
     { before: 'Équipe perdue, consignes en FR qu\'ils captent pas', after: 'Équipe alignée, chacun lit dans sa langue' },
   ];
   return (
-    <section style={{ background: 'var(--dep-paper)', padding: '120px 64px' }}>
+    <section style={{ background: 'var(--dep-black-3)', padding: '120px 64px' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
           <span className="dep-cable" />
@@ -423,23 +423,23 @@ function LandingVignettes() {
           {v.map((x, i) => (
             <div key={i} style={{
               background: 'var(--dep-white)', borderRadius: 20,
-              border: '1px solid var(--dep-line-light)', padding: 0, overflow: 'hidden',
+              border: '1px solid var(--dep-line-dark)', padding: 0, overflow: 'hidden',
             }}>
               <div style={{
                 padding: '24px 28px', background: 'var(--dep-paper-2)',
                 borderBottom: '1px solid var(--dep-line-light)',
               }}>
-                <div className="mono" style={{ fontSize: 11, color: 'var(--dep-grey-2)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8 }}>Avant DEP</div>
-                <div style={{ fontSize: 17, color: 'var(--dep-grey-1)', textDecoration: 'line-through', textDecorationColor: 'rgba(0,0,0,0.2)', lineHeight: 1.45 }}>
+                <div className="mono" style={{ fontSize: 11, color: 'var(--dep-grey-3)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8 }}>Avant DEP</div>
+                <div style={{ fontSize: 17, color: 'var(--dep-grey-4)', textDecoration: 'line-through', textDecorationColor: 'rgba(0,0,0,0.2)', lineHeight: 1.45 }}>
                   {x.before}
                 </div>
               </div>
               <div style={{ padding: '24px 28px' }}>
-                <div className="mono" style={{ fontSize: 11, color: 'var(--dep-black)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className="mono" style={{ fontSize: 11, color: 'var(--dep-paper)', letterSpacing: '0.16em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span className="dep-cable" style={{ width: 16 }} />
                   Avec DEP
                 </div>
-                <div style={{ fontSize: 19, color: 'var(--dep-black)', fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.01em' }}>
+                <div style={{ fontSize: 19, color: 'var(--dep-paper)', fontWeight: 600, lineHeight: 1.4, letterSpacing: '-0.01em' }}>
                   {x.after}
                 </div>
               </div>
@@ -541,7 +541,7 @@ function LandingFAQ() {
   ];
   const [open, setOpen] = useLState(0);
   return (
-    <section id="faq" style={{ background: 'var(--dep-paper)', padding: '120px 64px' }}>
+    <section id="faq" style={{ background: 'var(--dep-black-3)', padding: '120px 64px' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24 }}>
           <span className="dep-cable" />
@@ -558,7 +558,7 @@ function LandingFAQ() {
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 background: 'transparent', border: 'none', cursor: 'pointer',
                 fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600,
-                color: 'var(--dep-black)', letterSpacing: '-0.02em',
+                color: 'var(--dep-paper)', letterSpacing: '-0.02em',
               }}>
                 {q}
                 <span style={{
@@ -573,7 +573,7 @@ function LandingFAQ() {
                 </span>
               </button>
               {open === i && (
-                <div style={{ paddingBottom: 24, fontSize: 17, color: 'var(--dep-grey-1)', lineHeight: 1.55, maxWidth: 760 }}>
+                <div style={{ paddingBottom: 24, fontSize: 17, color: 'var(--dep-grey-4)', lineHeight: 1.55, maxWidth: 760 }}>
                   {a}
                 </div>
               )}
