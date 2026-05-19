@@ -3,6 +3,8 @@ import { motion } from "framer-motion"
 import { Check, Pencil, Sparkles, AlertCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Clarification } from "@/lib/llm/clarify"
+import { HighlightedText, HighlightLegend } from "./highlighted-text"
+import { parseHighlightMarkers } from "@/lib/llm/highlight"
 
 /**
  * Carte de clarification : on montre au patron/employé CE QU'ON A COMPRIS
@@ -45,9 +47,13 @@ export function ClarifyCard({
         Voici ce que j&apos;ai compris{language && language !== "fr" ? ` · langue détectée : ${language}` : ""}
       </div>
 
-      <p className="mt-4 font-display text-xl sm:text-2xl font-semibold leading-snug">
-        « {clarification.summary || "Je n'ai pas tout saisi."} »
-      </p>
+      <HighlightedText
+        text={`« ${clarification.summary || "Je n'ai pas tout saisi."} »`}
+        className="mt-4 font-display text-xl sm:text-2xl font-semibold leading-snug"
+      />
+      {parseHighlightMarkers(clarification.summary).some((s) => s.confidence === "low" || s.confidence === "medium") && (
+        <HighlightLegend className="mt-2" />
+      )}
 
       {clarification.items.length > 0 && (
         <ul className="mt-5 grid sm:grid-cols-2 gap-2">

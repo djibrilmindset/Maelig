@@ -8,6 +8,9 @@
  * - qwen-plus             : mid-range, harder extraction
  * - qwen3-asr-flash       : speech-to-text (via separate ASR endpoint)
  */
+import { hashLLMInput, llmCacheGet, llmCachePut, trackLLMUsage, estimateCostEUR, approxTokens } from "./cache"
+import { HIGHLIGHT_INSTRUCTION, stripMarkers } from "./highlight"
+
 const BASE = process.env.DASHSCOPE_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 const KEY = process.env.DASHSCOPE_API_KEY
 
@@ -30,7 +33,7 @@ export async function dashscopeChat({
   temperature?: number
   json?: boolean
   maxTokens?: number
-}): Promise<{ text: string; raw: unknown }> {
+}): Promise<{ text: string; raw: unknown; inputTokens: number; outputTokens: number }> {
   if (!KEY) throw new Error("DASHSCOPE_API_KEY not configured")
   const res = await fetch(`${BASE}/chat/completions`, {
     method: "POST",
@@ -50,15 +53,45 @@ export async function dashscopeChat({
     const err = await res.text().catch(() => "")
     throw new Error(`[dashscope] ${res.status} ${err.slice(0, 200)}`)
   }
-  const data = (await res.json()) as { choices: Array<{ message: { content: string } }> }
-  return { text: data.choices?.[0]?.message?.content ?? "", raw: data }
+  const data = (await res.json()) as {
+    choices: Array<{ message: { content: string } }>
+    usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
+  }
+  return {
+    text: data.choices?.[0]?.message?.content ?? "",
+    raw: data,
+    inputTokens: data.usage?.prompt_tokens ?? 0,
+    outputTokens: data.usage?.completion_tokens ?? 0,
+  }
 }
 
 /**
  * Correct French text: spelling, grammar, sentence reconstruction.
- * Returns clean readable French. Strips em-dashes (CLAUDE.md feedback).
+ * Returns text with confidence markers «...» (medium) and ‹...› (low).
+ * Use stripMarkers() if you need the clean version for storage/email.
+ *
+ * Cached SHA256 30j → -70% conso DashScope sur les inputs récurrents.
  */
-export async function correctFR(raw: string): Promise<string> {
+export async function correctFR(
+  raw: string,
+  opts: { orgId?: string; userId?: string; useHighlights?: boolean } = {},
+): Promise<string> {
+  const text = raw.slice(0, 4000)
+  const useHighlights = opts.useHighlights !== false
+  const cacheKey = hashLLMInput("qwen-turbo", useHighlights ? "correct_fr_hl" : "correct_fr", text)
+
+  // 1) Cache hit ?
+  const cached = await llmCacheGet<{ corrected: string }>(cacheKey)
+  if (cached?.corrected) {
+    void trackLLMUsage({
+      org_id: opts.orgId, user_id: opts.userId,
+      model: "qwen-turbo", task: "correct_fr",
+      cache_hit: true, cost_eur: 0,
+    })
+    return cleanText(cached.corrected)
+  }
+
+  // 2) Call LLM
   const prompt: ChatMessage[] = [
     {
       role: "system",
@@ -68,12 +101,40 @@ export async function correctFR(raw: string): Promise<string> {
         "Garde le sens technique (prises, tableau, disjoncteur, etc.).\n" +
         "INTERDITS : tiret demi-cadratin (—), tiret cadratin (---), point final isolé en fin de phrase courte.\n" +
         "Si le texte est dans une autre langue (arabe, anglais, espagnol, créole, wolof, etc.), TRADUIS en français.\n" +
+        (useHighlights ? HIGHLIGHT_INSTRUCTION + "\n" : "") +
         "Réponds UNIQUEMENT avec le texte corrigé, sans préambule.",
     },
-    { role: "user", content: raw.slice(0, 4000) },
+    { role: "user", content: text },
   ]
-  const { text } = await dashscopeChat({ model: "qwen-turbo", messages: prompt, temperature: 0.2 })
-  return cleanText(text)
+  const t0 = Date.now()
+  const { text: outRaw, inputTokens, outputTokens } = await dashscopeChat({
+    model: "qwen-turbo", messages: prompt, temperature: 0.2,
+  })
+  const out = cleanText(outRaw)
+  const cost = estimateCostEUR("qwen-turbo", inputTokens || approxTokens(text), outputTokens || approxTokens(out))
+
+  // 3) Cache write + usage log (best-effort)
+  void llmCachePut({
+    hash: cacheKey, model: "qwen-turbo", task: useHighlights ? "correct_fr_hl" : "correct_fr",
+    input_preview: text.slice(0, 200),
+    output: { corrected: out },
+    cost_saved_eur: cost,
+  })
+  void trackLLMUsage({
+    org_id: opts.orgId, user_id: opts.userId,
+    model: "qwen-turbo", task: "correct_fr",
+    cache_hit: false, input_tokens: inputTokens, output_tokens: outputTokens,
+    duration_ms: Date.now() - t0, cost_eur: cost,
+  })
+  return out
+}
+
+/**
+ * Version "propre" sans marqueurs, pour stockage / envoi mail.
+ */
+export async function correctFRClean(raw: string, opts: { orgId?: string; userId?: string } = {}): Promise<string> {
+  const withMarkers = await correctFR(raw, { ...opts, useHighlights: false })
+  return stripMarkers(withMarkers)
 }
 
 function cleanText(s: string): string {

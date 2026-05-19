@@ -9,6 +9,7 @@
  * Output : structure typée.
  */
 import { dashscopeChat, type ChatMessage } from "./dashscope"
+import { trackLLMUsage, estimateCostEUR } from "./cache"
 
 export type IncidentUrgency = "urgent" | "important" | "normal" | "info"
 
@@ -48,18 +49,27 @@ Règles de tri urgence :
 - normal : question, précision technique, doute sur câblage → 0.3-0.6
 - info : photo de progression, simple remontée → 0-0.3
 
-Style : direct, oral, comme à un collègue. INTERDIT : tirets — ou ---, formulations IA ("voici", "je vais", "permettez-moi"), point isolé en fin de courte phrase.`,
+Style : direct, oral, comme à un collègue. INTERDIT : tirets — ou ---, formulations IA ("voici", "je vais", "permettez-moi"), point isolé en fin de courte phrase.
+
+MARQUAGE confiance dans ai_resume : entoure de ‹ et › les mots dont tu doutes vraiment (mot mal entendu, sens ambigu), de « et » les mots à relire (nom propre, chiffre douteux). Max 2-3 marqueurs au total. N'utilise PAS ces marqueurs par défaut.`,
   }
   const user: ChatMessage = {
     role: "user",
     content: `${opts.chantier_label ? `Chantier : ${opts.chantier_label}\n` : ""}${opts.client_label ? `Client : ${opts.client_label}\n` : ""}Pièces jointes : ${opts.photo_count ?? 0} photo(s), ${opts.video_count ?? 0} vidéo(s)\nLangue détectée : ${opts.language ?? "fr"}\n\nMessage de l'employé :\n${opts.transcript.slice(0, 4000)}`,
   }
 
-  const { text } = await dashscopeChat({
+  const t0 = Date.now()
+  const { text, inputTokens, outputTokens } = await dashscopeChat({
     model: "qwen-plus",
     temperature: 0.2,
     json: true,
     messages: [sys, user],
+  })
+  void trackLLMUsage({
+    model: "qwen-plus", task: "analyze_incident", cache_hit: false,
+    input_tokens: inputTokens, output_tokens: outputTokens,
+    duration_ms: Date.now() - t0,
+    cost_eur: estimateCostEUR("qwen-plus", inputTokens, outputTokens),
   })
 
   try {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
 import { getStripe, PRICE_IDS, STRIPE_TRIAL_DAYS } from "@/lib/stripe/server"
+import { limitStripe, checkLimits, tooManyRequests } from "@/lib/ratelimit"
 
 export const runtime = "nodejs"
 
@@ -15,6 +16,10 @@ export async function POST(req: Request) {
   if (profile.role !== "owner" && profile.role !== "admin_dep") {
     return NextResponse.json({ error: "forbidden_only_owner" }, { status: 403 })
   }
+
+  // Rate limit : 10 / heure / user
+  const rl = await checkLimits({ ratelimit: limitStripe, key: user.id })
+  if (!rl.success) return tooManyRequests(rl)
 
   const body = await req.json().catch(() => ({})) as { slave_seats?: number; mode?: "subscribe" | "portal" }
 

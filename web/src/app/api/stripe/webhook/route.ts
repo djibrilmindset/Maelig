@@ -23,6 +23,27 @@ export async function POST(req: Request) {
 
   const admin = supabaseAdmin()
 
+  // Idempotency : si on a déjà traité cet event, return early.
+  // Stripe retry les webhooks → sans ça on double-process (double crédit, double mail).
+  const { data: dedup, error: dedupErr } = await admin
+    .from("stripe_events")
+    .insert({
+      id: event.id,
+      type: event.type,
+      livemode: event.livemode,
+      payload: event.data.object as never,
+    } as never)
+    .select("id")
+    .single()
+  if (dedupErr || !dedup) {
+    // Code 23505 = unique_violation → déjà reçu
+    if ((dedupErr as { code?: string } | null)?.code === "23505") {
+      return NextResponse.json({ received: true, idempotent_skip: true })
+    }
+    // Erreur autre → on continue quand même (mieux vaut double process que rien)
+    console.warn("[stripe.webhook] dedup insert failed:", dedupErr?.message)
+  }
+
   switch (event.type) {
     case "checkout.session.completed":
     case "customer.subscription.created":

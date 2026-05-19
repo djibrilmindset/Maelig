@@ -5,6 +5,8 @@
  */
 import { dashscopeChat, type ChatMessage } from "./dashscope"
 import { getLangue } from "@/lib/langues"
+import { hashLLMInput, llmCacheGet, llmCachePut, trackLLMUsage, estimateCostEUR } from "./cache"
+import { HIGHLIGHT_INSTRUCTION } from "./highlight"
 
 /**
  * Traduit un message d'un employé vers la langue du patron, ET vice-versa.
@@ -36,6 +38,17 @@ export async function translateMessage(text: string, from: string, to: string): 
     extra.push("Cette langue est moins bien couverte par les LLMs. Sois prudent : si tu n'es pas sûr d'un terme technique, garde-le en français entre parenthèses.")
   }
 
+  const model = pickModel(toL)
+  const input = text.slice(0, 3500)
+  const cacheKey = hashLLMInput(model, `translate:${from}->${to}`, input)
+
+  // Cache lookup
+  const cached = await llmCacheGet<{ out: string }>(cacheKey)
+  if (cached?.out) {
+    void trackLLMUsage({ model, task: "translate", cache_hit: true, cost_eur: 0 })
+    return clean(cached.out)
+  }
+
   const sys: ChatMessage = {
     role: "system",
     content:
@@ -45,15 +58,30 @@ export async function translateMessage(text: string, from: string, to: string): 
       `Style direct, oral, comme à un collègue. INTERDIT : tiret demi-cadratin —, tiret cadratin ---. ` +
       `Noms propres (lieu, personne) : garde-les tels quels. ` +
       (extra.length ? `\n${extra.join("\n")}\n` : "") +
+      HIGHLIGHT_INSTRUCTION + "\n" +
       `Réponds UNIQUEMENT avec la traduction, sans guillemets ni préambule.`,
   }
-  const user: ChatMessage = { role: "user", content: text.slice(0, 3500) }
-  const { text: out } = await dashscopeChat({
-    model: pickModel(toL),
+  const user: ChatMessage = { role: "user", content: input }
+  const t0 = Date.now()
+  const { text: out, inputTokens, outputTokens } = await dashscopeChat({
+    model,
     messages: [sys, user],
     temperature: 0.2,
   })
-  return clean(out)
+  const cleaned = clean(out)
+  const cost = estimateCostEUR(model, inputTokens, outputTokens)
+  void llmCachePut({
+    hash: cacheKey, model, task: "translate",
+    input_preview: input.slice(0, 200),
+    output: { out: cleaned },
+    cost_saved_eur: cost,
+  })
+  void trackLLMUsage({
+    model, task: "translate", cache_hit: false,
+    input_tokens: inputTokens, output_tokens: outputTokens,
+    duration_ms: Date.now() - t0, cost_eur: cost,
+  })
+  return cleaned
 }
 
 /**

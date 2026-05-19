@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase/admin"
 import { transcribeAudioFromUrl } from "@/lib/llm/asr"
 import { correctFR, extractDevisFromTranscript } from "@/lib/llm/dashscope"
 import { clarifyTranscript } from "@/lib/llm/clarify"
+import { limitVoice, limitVoiceDaily, checkLimits, tooManyRequests } from "@/lib/ratelimit"
 
 export const runtime = "nodejs"
 export const maxDuration = 60
@@ -19,6 +20,13 @@ export async function POST(req: Request) {
     .eq("id", user.id)
     .maybeSingle()
   if (!profile?.org_id) return NextResponse.json({ error: "no_org" }, { status: 403 })
+
+  // Rate limit : 10/min/user + 100/jour/org (protection LLM cost)
+  const rl = await checkLimits(
+    { ratelimit: limitVoice, key: user.id },
+    { ratelimit: limitVoiceDaily, key: profile.org_id },
+  )
+  if (!rl.success) return tooManyRequests(rl)
 
   const form = await req.formData().catch(() => null)
   if (!form) return NextResponse.json({ error: "form_required" }, { status: 400 })

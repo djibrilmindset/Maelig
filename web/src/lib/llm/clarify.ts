@@ -16,6 +16,8 @@
  * }
  */
 import { dashscopeChat, type ChatMessage } from "./dashscope"
+import { hashLLMInput, llmCacheGet, llmCachePut, trackLLMUsage, estimateCostEUR } from "./cache"
+import { HIGHLIGHT_INSTRUCTION } from "./highlight"
 
 export interface ClarificationItem {
   label: string
@@ -33,7 +35,18 @@ export interface Clarification {
   questions: string[]
 }
 
-export async function clarifyTranscript(text: string, contextHints?: { knownArticles?: string[]; knownClients?: string[] }): Promise<Clarification> {
+export async function clarifyTranscript(
+  text: string,
+  contextHints?: { knownArticles?: string[]; knownClients?: string[]; orgId?: string; userId?: string },
+): Promise<Clarification> {
+  const input = text.slice(0, 4000)
+  const cacheKey = hashLLMInput("qwen-plus", "clarify", input)
+  const cached = await llmCacheGet<Clarification>(cacheKey)
+  if (cached?.items) {
+    void trackLLMUsage({ org_id: contextHints?.orgId, user_id: contextHints?.userId, model: "qwen-plus", task: "clarify", cache_hit: true, cost_eur: 0 })
+    return cached
+  }
+
   const hints =
     (contextHints?.knownArticles?.length
       ? `Articles déjà connus (utilise leur libellé exact si match):\n${contextHints.knownArticles.slice(0, 50).join("\n")}\n\n`
@@ -67,11 +80,13 @@ Règles d'or :
 - INTERDIT : tirets — ou ---, points isolés en fin de courte phrase, formulations type IA ('certainement', 'voici', 'je vais', 'permettez-moi').
 - Si quantité absente : qty = 1 et confidence = "low".
 - Si tu ne comprends rien : summary = "Je n'ai pas compris", questions = ["Pouvez-vous redire en une phrase ?"]
-- Le ton est direct, chaleureux, comme un collègue. Pas robotique.`,
+- Le ton est direct, chaleureux, comme un collègue. Pas robotique.
+- Dans summary, ${HIGHLIGHT_INSTRUCTION.split('\n').slice(1, 4).join(' ')}`,
   }
-  const user: ChatMessage = { role: "user", content: text.slice(0, 4000) }
+  const user: ChatMessage = { role: "user", content: input }
 
-  const { text: out } = await dashscopeChat({
+  const t0 = Date.now()
+  const { text: out, inputTokens, outputTokens } = await dashscopeChat({
     model: "qwen-plus",
     temperature: 0.15,
     json: true,
@@ -80,7 +95,7 @@ Règles d'or :
 
   try {
     const j = JSON.parse(out) as Partial<Clarification>
-    return {
+    const result: Clarification = {
       summary: j.summary?.toString() ?? "",
       items: Array.isArray(j.items)
         ? j.items.map((it) => ({
@@ -97,6 +112,15 @@ Règles d'or :
       labor_hours: typeof j.labor_hours === "number" ? j.labor_hours : null,
       questions: Array.isArray(j.questions) ? j.questions.slice(0, 3).map(String) : [],
     }
+    const cost = estimateCostEUR("qwen-plus", inputTokens, outputTokens)
+    void llmCachePut({ hash: cacheKey, model: "qwen-plus", task: "clarify", input_preview: input.slice(0, 200), output: result, cost_saved_eur: cost })
+    void trackLLMUsage({
+      org_id: contextHints?.orgId, user_id: contextHints?.userId,
+      model: "qwen-plus", task: "clarify", cache_hit: false,
+      input_tokens: inputTokens, output_tokens: outputTokens,
+      duration_ms: Date.now() - t0, cost_eur: cost,
+    })
+    return result
   } catch {
     return {
       summary: text.slice(0, 200),
