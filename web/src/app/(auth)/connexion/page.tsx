@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -19,6 +19,14 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export default function ConnexionPage() {
+  return (
+    <Suspense fallback={<div className="text-sm text-muted">Chargement…</div>}>
+      <ConnexionInner />
+    </Suspense>
+  )
+}
+
+function ConnexionInner() {
   const router = useRouter()
   const params = useSearchParams()
   const [magicSent, setMagicSent] = useState(false)

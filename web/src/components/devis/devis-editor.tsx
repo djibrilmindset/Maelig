@@ -1,5 +1,5 @@
 "use client"
-import { useMemo, useState, useTransition } from "react"
+import { Suspense, useMemo, useState, useTransition } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -30,17 +30,27 @@ interface ClientLite {
   email: string | null
 }
 
-export function DevisEditor({
-  orgDefaults,
-  knownArticles,
-  knownClients,
-  initialPayload,
-}: {
+interface DevisEditorProps {
   orgDefaults: { taux_horaire: number; tva_default: number }
   knownArticles: ArticleLite[]
   knownClients: ClientLite[]
   initialPayload?: Partial<DevisPayload>
-}) {
+}
+
+export function DevisEditor(props: DevisEditorProps) {
+  return (
+    <Suspense fallback={<div className="p-6 text-muted">Chargement…</div>}>
+      <DevisEditorInner {...props} />
+    </Suspense>
+  )
+}
+
+function DevisEditorInner({
+  orgDefaults,
+  knownArticles,
+  knownClients,
+  initialPayload,
+}: DevisEditorProps) {
   const router = useRouter()
   const params = useSearchParams()
   const startMicOpen = params.get("source") === "voice"
