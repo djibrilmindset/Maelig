@@ -45,34 +45,6 @@ export default async function VerifierEmailPage() {
 
       <VerifyEmailClient email={user.email!} />
 
-      <div className="relative my-6 text-center text-xs text-muted">
-        <span className="bg-background px-3 relative z-10">ou plus rapide</span>
-        <div className="absolute inset-x-0 top-1/2 h-px bg-border -z-0" />
-      </div>
-
-      <div className="rounded-[var(--radius)] border border-electric/20 bg-electric/5 p-4">
-        <p className="text-sm font-medium text-foreground">
-          Connectez-vous directement avec votre compte
-        </p>
-        <p className="mt-1 text-xs text-muted">
-          Plus besoin de mot de passe ni de vérification email
-        </p>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-          <Link
-            href="/connexion?force_oauth=google"
-            className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-border bg-white text-[#1f1f1f] h-10 px-4 text-sm font-medium hover:bg-[#f8f9fa] transition-colors"
-          >
-            Continuer avec Google
-          </Link>
-          <Link
-            href="/connexion?force_oauth=apple"
-            className="inline-flex items-center justify-center gap-2 rounded-[10px] border border-white/10 bg-black text-white h-10 px-4 text-sm font-medium hover:bg-[#1a1a1a] transition-colors"
-          >
-            Continuer avec Apple
-          </Link>
-        </div>
-      </div>
-
       <p className="mt-6 text-center text-xs text-muted-2">
         Mauvaise adresse ?{" "}
         <Link href="/connexion" className="text-electric hover:underline">

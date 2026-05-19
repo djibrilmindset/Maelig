@@ -1,7 +1,7 @@
 "use client"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Suspense, useEffect, useState } from "react"
+import { Suspense } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -10,7 +10,6 @@ import { ArrowRight, KeyRound, Mail } from "lucide-react"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input, Label, FieldError } from "@/components/ui/input"
-import { OAuthButtons } from "@/components/auth/oauth-buttons"
 
 const schema = z.object({
   email: z.string().email("Email invalide"),
@@ -30,15 +29,7 @@ export default function ConnexionPage() {
         </Link>
       </p>
 
-      <div className="mt-8">
-        <OAuthButtons mode="login" />
-        <div className="relative my-6 text-center text-xs text-muted">
-          <span className="bg-background px-3 relative z-10">ou avec votre email</span>
-          <div className="absolute inset-x-0 top-1/2 h-px bg-border -z-0" />
-        </div>
-      </div>
-
-      <Suspense fallback={<div className="text-sm text-muted">Chargement du formulaire…</div>}>
+      <Suspense fallback={<div className="mt-8 text-sm text-muted">Chargement du formulaire…</div>}>
         <ConnexionInner />
       </Suspense>
     </div>
@@ -48,26 +39,8 @@ export default function ConnexionPage() {
 function ConnexionInner() {
   const router = useRouter()
   const params = useSearchParams()
-  const [magicSent, setMagicSent] = useState(false)
 
-  // Auto-déclenche l'OAuth si /connexion?force_oauth=google|apple
-  // (utilisé par /verifier-email pour "Continuer avec ... à la place")
-  useEffect(() => {
-    const force = params.get("force_oauth")
-    if (force !== "google" && force !== "apple") return
-    const supabase = createSupabaseBrowserClient()
-    supabase.auth.signInWithOAuth({
-      provider: force,
-      options: {
-        redirectTo: `${window.location.origin}/app`,
-        queryParams: force === "google" ? { access_type: "offline", prompt: "consent" } : undefined,
-      },
-    }).then(({ error }) => {
-      if (error) toast.error(`Connexion ${force} impossible`, { description: error.message })
-    })
-  }, [params])
-
-  const { register, handleSubmit, formState: { errors, isSubmitting }, getValues } = useForm<FormValues>({
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },
   })
@@ -83,27 +56,8 @@ function ConnexionInner() {
     router.replace(params.get("redirect_to") ?? "/app")
   }
 
-  const sendMagicLink = async () => {
-    const email = getValues("email")
-    if (!email || !z.string().email().safeParse(email).success) {
-      toast.error("Entrez d'abord votre email")
-      return
-    }
-    const supabase = createSupabaseBrowserClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/app` },
-    })
-    if (error) {
-      toast.error("Envoi impossible", { description: error.message })
-      return
-    }
-    setMagicSent(true)
-    toast.success("Lien magique envoyé", { description: "Regardez vos mails." })
-  }
-
   return (
-    <div>
+    <div className="mt-8">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div>
           <Label htmlFor="email">Email</Label>
@@ -144,21 +98,6 @@ function ConnexionInner() {
 
         <Button type="submit" loading={isSubmitting} className="w-full" iconRight={<ArrowRight className="h-4 w-4" />}>
           Se connecter
-        </Button>
-
-        <div className="relative my-6 text-center text-xs text-muted">
-          <span className="bg-background px-3 relative z-10">ou</span>
-          <div className="absolute inset-x-0 top-1/2 h-px bg-border -z-0" />
-        </div>
-
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={sendMagicLink}
-          className="w-full"
-          disabled={magicSent}
-        >
-          {magicSent ? "Lien envoyé · regardez vos mails" : "Recevoir un lien magique par email"}
         </Button>
       </form>
     </div>

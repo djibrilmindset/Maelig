@@ -9,7 +9,6 @@ import { ArrowRight, Building2, KeyRound, Mail, User } from "lucide-react"
 import { createSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input, Label, FieldError } from "@/components/ui/input"
-import { OAuthButtons } from "@/components/auth/oauth-buttons"
 
 const schema = z.object({
   fullName: z.string().min(2, "Indiquez votre nom"),
@@ -60,15 +59,7 @@ export default function InscriptionPage() {
         </Link>
       </p>
 
-      <div className="mt-8">
-        <OAuthButtons mode="signup" />
-        <div className="relative my-6 text-center text-xs text-muted">
-          <span className="bg-background px-3 relative z-10">ou créer avec votre email</span>
-          <div className="absolute inset-x-0 top-1/2 h-px bg-border -z-0" />
-        </div>
-      </div>
-
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
         <div>
           <Label htmlFor="fullName">Votre nom complet</Label>
           <div className="relative mt-2">
