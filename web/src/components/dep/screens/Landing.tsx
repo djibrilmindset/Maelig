@@ -60,17 +60,12 @@ function LandingNav() {
       padding: '24px 48px',
     }}>
       <Image src="/dep-logo.png" alt="DEP" width={120} height={40} priority style={{ width: "auto", height: 40 }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-        <a href="#tarifs" style={{ color: 'var(--dep-grey-4)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Tarifs</a>
-        <a href="#faq" style={{ color: 'var(--dep-grey-4)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>FAQ chantier</a>
-        <a href="#" style={{ color: 'var(--dep-grey-4)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}>Connexion</a>
-        <DepMagnetic strength={0.2}>
-          <a href="#tarifs" className="dep-btn dep-btn--primary dep-btn--sm" style={{ textDecoration: 'none' }}>
-            Essayer 14 jours
-            <DepIcon.arrow style={{ width: 14, height: 14 }} />
-          </a>
-        </DepMagnetic>
-      </div>
+      <DepMagnetic strength={0.2}>
+        <a href="/inscription" className="dep-btn dep-btn--primary dep-btn--sm" style={{ textDecoration: 'none' }}>
+          Essayer 14 jours
+          <DepIcon.arrow style={{ width: 14, height: 14 }} />
+        </a>
+      </DepMagnetic>
     </div>
   );
 }
@@ -98,7 +93,7 @@ function LandingHero() {
         <DepReveal>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 32 }}>
             <span className="dep-cable" />
-            <span className="dep-eyebrow dep-eyebrow--on-dark">SaaS terrain · électricien · 2026</span>
+            <span className="dep-eyebrow dep-eyebrow--on-dark">L&apos;outil terrain · pour électriciens · 2026</span>
           </div>
         </DepReveal>
 
@@ -114,8 +109,8 @@ function LandingHero() {
             fontSize: 22, lineHeight: 1.45, color: 'var(--dep-grey-4)',
             maxWidth: 720, marginBottom: 48,
           }}>
-            Le SaaS qui transforme ta voix en devis, ton devis en facture, et ta facture en cash.
-            En FR, et dans 20 langues de chantier
+            Tu parles, ton devis sort. Tu valides, la facture part. Le client paie, t&apos;es payé.
+            En français, et dans 20 langues parlées sur tes chantiers
           </p>
         </DepReveal>
 
@@ -173,23 +168,7 @@ function LandingHero() {
 }
 
 function LandingProof() {
-  return (
-    <section style={{
-      background: 'var(--dep-yellow)', color: 'var(--dep-black)',
-      padding: '28px 64px', display: 'flex', alignItems: 'center', gap: 24,
-    }}>
-      <DepIcon.bolt style={{ width: 22, height: 22 }} />
-      <div style={{ fontSize: 17, fontWeight: 600, letterSpacing: '-0.01em', flex: 1 }}>
-        Maelig + 23 électriciens FR déjà sur DEP
-        <span style={{ marginLeft: 14, fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 500 }}>
-          29 120 €/an récupérés en moyenne sur l'admin
-        </span>
-      </div>
-      <span className="mono" style={{ fontSize: 12, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
-        Beta fermée · janvier 2026 →
-      </span>
-    </section>
-  );
+  return null;
 }
 
 function LandingMultilingue() {
@@ -509,7 +488,7 @@ function LandingPricing() {
               ))}
             </div>
             <DepMagnetic strength={0.25}>
-              <a href="#" className="dep-btn dep-btn--lg" style={{
+              <a href="/inscription" className="dep-btn dep-btn--lg" style={{
                 background: 'var(--dep-black)', color: 'var(--dep-yellow)',
                 textDecoration: 'none', borderRadius: 14, padding: '18px 24px',
                 fontWeight: 600,
@@ -620,7 +599,7 @@ function LandingCTAFinal() {
           ou tu le tapes une heure ?
         </h2>
         <DepMagnetic strength={0.3}>
-          <a href="#" className="dep-btn dep-btn--primary dep-btn--lg" style={{ textDecoration: 'none', fontSize: 20, padding: '24px 36px' }}>
+          <a href="/inscription" className="dep-btn dep-btn--primary dep-btn--lg" style={{ textDecoration: 'none', fontSize: 20, padding: '24px 36px' }}>
             Démarrer mon essai gratuit
             <DepIcon.arrow style={{ width: 22, height: 22 }} />
           </a>
@@ -643,33 +622,10 @@ function LandingFooter() {
             DEP. Devis Électricité Plateforme. Le SaaS terrain pour électriciens FR. Conçu sur chantier avec Maelig, électricien indépendant
           </p>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: 48, fontSize: 13 }}>
-          <div>
-            <div className="mono" style={{ color: 'var(--dep-paper)', textTransform: 'uppercase', letterSpacing: '0.16em', fontSize: 11, marginBottom: 14 }}>Produit</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Vocal devis</a>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Chat traduit</a>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Incidents chantier</a>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Tarifs</a>
-            </div>
-          </div>
-          <div>
-            <div className="mono" style={{ color: 'var(--dep-paper)', textTransform: 'uppercase', letterSpacing: '0.16em', fontSize: 11, marginBottom: 14 }}>Légal</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Mentions légales</a>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>CGV</a>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>RGPD</a>
-              <a href="#" style={{ color: 'inherit', textDecoration: 'none' }}>Cookies</a>
-            </div>
-          </div>
-          <div>
-            <div className="mono" style={{ color: 'var(--dep-paper)', textTransform: 'uppercase', letterSpacing: '0.16em', fontSize: 11, marginBottom: 14 }}>Contact</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <a href="mailto:ayouneslead@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>ayouneslead@gmail.com</a>
-              <span>Maelig21 · pilote</span>
-              <span>Hébergé OVH Roubaix</span>
-            </div>
-          </div>
+        <div style={{ fontSize: 13, color: 'var(--dep-grey-3)', lineHeight: 1.8 }}>
+          <div className="mono" style={{ color: 'var(--dep-paper)', textTransform: 'uppercase', letterSpacing: '0.16em', fontSize: 11, marginBottom: 10 }}>Contact</div>
+          <a href="mailto:ayouneslead@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>ayouneslead@gmail.com</a><br />
+          <span>Maelig21 · pilote · Hébergé OVH Roubaix</span>
         </div>
       </div>
       <div style={{ borderTop: '1px solid var(--dep-line-dark)', marginTop: 40, paddingTop: 24, display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.06em' }}>
@@ -694,7 +650,7 @@ export default function Landing() {
       <LandingFAQ />
       <LandingCTAFinal />
       <LandingFooter />
-      
+
     </div>
   );
 }
