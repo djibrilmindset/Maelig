@@ -80,6 +80,12 @@ export async function POST(req: Request) {
     .order("usage_count", { ascending: false })
     .limit(120)
 
+  // ===== PIPELINE 3-étapes (séquentiel, demande user 2026-05-20) =====
+  // 1. ASR brut (qwen3-asr-flash, $0.005/min, ~3s)
+  // 2. Correction + traduction FR propre (qwen-turbo, $0.05/1M tokens, ~1.5s)
+  //    → garantit que l'extraction se fait sur du français propre
+  // 3. Extraction structurée articles + client + adresse (qwen-plus, $0.40/1M, ~2s)
+  // Total : ~6-7s, coût ~$0.00003 par devis
   let rawText = ""
   let langDetected: string | undefined
   try {
@@ -91,15 +97,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "asr_failed", detail: msg }, { status: 502 })
   }
 
-  // Parallel: correct + extract + clarify
+  // ÉTAPE 2 — Correction + traduction FR propre AVANT extraction
+  // Si la langue détectée n'est pas FR, correctFR traduit aussi. Cf. dashscope.ts.
+  let corrected = rawText
+  try {
+    corrected = await correctFR(rawText, { orgId: profile.org_id, userId: user.id })
+  } catch (e) {
+    console.warn("[transcribe] correctFR failed, fallback rawText:", e instanceof Error ? e.message : e)
+  }
+
+  // ÉTAPE 3 — Extraction structurée sur le CORRIGÉ (français propre)
+  // Clarification optionnelle en parallèle (questions à poser au user si ambigu)
   const articleNames = (articles ?? []).map((a) => a.nom)
-  const [corrected, extracted, clarification] = await Promise.all([
-    correctFR(rawText).catch(() => rawText),
-    extractDevisFromTranscript(rawText, articleNames).catch(() => ({ items: [] as const })),
-    clarifyTranscript(rawText, { knownArticles: articleNames }).catch(() => null),
+  const [extracted, clarification] = await Promise.all([
+    extractDevisFromTranscript(corrected, articleNames).catch((e) => {
+      console.warn("[transcribe] extract failed:", e instanceof Error ? e.message : e)
+      return { items: [] as const }
+    }),
+    clarifyTranscript(corrected, { knownArticles: articleNames }).catch(() => null),
   ])
 
-  // Store transcription record
+  // Store transcription record (audit + replay debugging)
   await admin.from("audio_transcriptions").insert({
     org_id: profile.org_id,
     user_id: user.id,
@@ -110,7 +128,7 @@ export async function POST(req: Request) {
     text_corrige: corrected,
     text_traduit: corrected,
     articles_extracts: extracted as object,
-    llm_used: "qwen-plus+qwen-turbo+paraformer-v2",
+    llm_used: "qwen3-asr-flash → qwen-turbo (correct/translate) → qwen-plus (extract)",
   })
 
   return NextResponse.json({
