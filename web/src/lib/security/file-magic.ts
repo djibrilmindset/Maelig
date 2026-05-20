@@ -112,9 +112,12 @@ export async function checkMagic(
   declaredMime?: string,
 ): Promise<MagicCheckResult> {
   // 1) MIME déclaré dans la whitelist ?
-  const declared = (declaredMime ?? file.type ?? "").toLowerCase()
+  // Strip suffix codec (ex: "audio/webm;codecs=opus" → "audio/webm")
+  // car les MediaRecorder browser (Chrome/Safari/Firefox) le rajoutent.
+  const rawMime = (declaredMime ?? file.type ?? "").toLowerCase()
+  const declared = rawMime.split(";")[0].trim()
   if (!declared || !ALLOWED_MIME[expectedCategory].has(declared)) {
-    return { ok: false, reason: `mime_not_allowed:${declared || "empty"}` }
+    return { ok: false, reason: `mime_not_allowed:${rawMime || "empty"}` }
   }
 
   // 2) Lecture des 32 premiers octets

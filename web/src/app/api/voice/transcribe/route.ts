@@ -56,11 +56,13 @@ export async function POST(req: Request) {
   // crypto.randomUUID() = safe (pas de path traversal possible). org_id provient
   // de profile (server-trusted), pas du form. Extension dérivée du MIME, pas du
   // filename user.
-  const filename = `${profile.org_id}/${Date.now()}-${crypto.randomUUID()}.${safeExtFromMime(file.type)}`
+  // Strip suffix codec pour storage (Supabase Storage refuse certains MIME multi-segment)
+  const cleanMime = (file.type || "audio/webm").split(";")[0].trim()
+  const filename = `${profile.org_id}/${Date.now()}-${crypto.randomUUID()}.${safeExtFromMime(cleanMime)}`
   const buf = Buffer.from(await file.arrayBuffer())
 
   const { error: upErr } = await admin.storage.from("audio").upload(filename, buf, {
-    contentType: file.type,
+    contentType: cleanMime,
     upsert: false,
   })
   if (upErr) return NextResponse.json({ error: "upload_failed", detail: upErr.message }, { status: 500 })

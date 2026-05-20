@@ -81,10 +81,12 @@ export async function POST(req: Request) {
     if (!magicAudio.ok) {
       return NextResponse.json({ error: "audio_invalid", reason: magicAudio.reason }, { status: 415 })
     }
-    audioPath = `${folder}/audio.${safeExtFromMime(audio.type)}`
+    // Strip suffix codec MediaRecorder (audio/webm;codecs=opus → audio/webm)
+    const cleanAudioMime = (audio.type || "audio/webm").split(";")[0].trim()
+    audioPath = `${folder}/audio.${safeExtFromMime(cleanAudioMime)}`
     const buf = Buffer.from(await audio.arrayBuffer())
     const { error } = await admin.storage.from("chantier-media").upload(audioPath, buf, {
-      contentType: audio.type,
+      contentType: cleanAudioMime,
       upsert: false,
     })
     if (error) return NextResponse.json({ error: "audio_upload_failed", detail: error.message }, { status: 500 })
@@ -104,17 +106,19 @@ export async function POST(req: Request) {
       const f = files[i]
       if (!f || f.size === 0) continue
       if (f.size > maxBytes) continue                // skip silently les fichiers trop lourds
-      if (!ALLOWED_MIME[category].has((f.type || "").toLowerCase())) continue
-      const magic = await checkMagic(f, category, f.type)
+      // Strip codec suffix (audio/webm;codecs=opus → audio/webm)
+      const cleanType = (f.type || "").toLowerCase().split(";")[0].trim()
+      if (!ALLOWED_MIME[category].has(cleanType)) continue
+      const magic = await checkMagic(f, category, cleanType)
       if (!magic.ok) {
         console.warn(`[incident] reject ${field}[${i}]: ${magic.reason}`)
         continue
       }
-      const ext = safeExtFromMime(f.type)
+      const ext = safeExtFromMime(cleanType)
       const path = `${folder}/${field}-${uploadedCount}.${ext}`
       const buf = Buffer.from(await f.arrayBuffer())
       const { error } = await admin.storage.from("chantier-media").upload(path, buf, {
-        contentType: f.type,
+        contentType: cleanType,
         upsert: false,
       })
       if (!error) {
