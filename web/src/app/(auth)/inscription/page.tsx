@@ -58,7 +58,9 @@ export default function InscriptionPage() {
       email: values.email,
       password: values.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/app`,
+        // Fix 2026-05-22 : confirmation email passe par /auth/callback pour
+        // exchangeCodeForSession server-side, sinon ?code Supabase est perdu.
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/app")}`,
         data: {
           full_name: values.fullName,
           company: values.company,

@@ -29,7 +29,9 @@ export default function OubliPage() {
     }
     const supabase = createSupabaseBrowserClient()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reinitialisation`,
+      // Fix 2026-05-22 : passe par /auth/callback (PKCE exchange server-side)
+      // sinon la page /reinitialisation n'a pas de session pour updateUser.
+      redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/reinitialisation")}`,
     })
     // P1 audit — Tracé même si error pour détecter enumeration attacks
     void fetch("/api/auth/event", {

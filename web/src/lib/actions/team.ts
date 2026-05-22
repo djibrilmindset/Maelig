@@ -26,10 +26,14 @@ export async function inviteSlave(input: unknown) {
   // 1) Generate an invite link (Supabase Auth admin)
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // Fix 2026-05-22 : invité atterrit sur /auth/callback (échange code PKCE)
+  // puis /reinitialisation pour définir son mot de passe initial. Sans ça,
+  // le middleware /app redirige vers /connexion en perdant le ?code Supabase
+  // → l'employé ne peut jamais se connecter.
   const { data: invite, error: inviteErr } = await (admin.auth as any).admin.inviteUserByEmail(
     data.email,
     {
-      redirectTo: `${baseUrl}/app`,
+      redirectTo: `${baseUrl}/auth/callback?next=${encodeURIComponent("/reinitialisation")}`,
       data: {
         full_name: data.full_name,
         invited_org_id: profile.org_id,
