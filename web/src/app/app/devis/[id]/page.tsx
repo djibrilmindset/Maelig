@@ -22,7 +22,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
   const { data: devis } = await supabase
     .from("devis")
-    .select("*, clients(*), devis_items(*)")
+    .select("*, clients(*), devis_items(*, articles!left(id, nom, categorie))")
     .eq("id", id)
     .eq("org_id", profile!.org_id!)
     .maybeSingle()
@@ -85,7 +85,16 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
               {items.length === 0 && (
                 <tr><td colSpan={5} className="p-6 text-center text-muted">Aucune ligne</td></tr>
               )}
-              {items.map((it) => (
+              {items.map((it) => {
+                const isSection = (it as any).is_section === true
+                if (isSection) {
+                  return (
+                    <tr key={it.id} className="border-t border-electric/20 bg-electric/5">
+                      <td colSpan={5} className="p-3 font-bold text-base tracking-wide">{it.description}</td>
+                    </tr>
+                  )
+                }
+                return (
                 <tr key={it.id} className="border-t border-border">
                   <td className="p-3">{it.description}</td>
                   <td className="p-3 text-right font-mono">{it.quantite}</td>
@@ -93,7 +102,8 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
                   <td className="p-3 text-right font-mono">{formatEUR(it.prix_unitaire_ht)}</td>
                   <td className="p-3 text-right font-mono">{formatEUR(it.total_ht)}</td>
                 </tr>
-              ))}
+                )
+              })}
               {devis.heures_main_oeuvre > 0 && (
                 <tr className="border-t border-border bg-surface-2/40">
                   <td className="p-3">Main-d&apos;œuvre · pose</td>

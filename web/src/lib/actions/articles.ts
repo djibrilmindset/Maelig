@@ -118,3 +118,16 @@ export async function seedDefaultArticles() {
   revalidatePath("/app/parametres/defauts")
   return { ok: true, inserted: newOnes.length, total: DEFAULT_ARTICLES.length }
 }
+
+export async function updateArticlePrice(id: string, prix_unitaire_ht: number) {
+  const supabase = await createSupabaseServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error("not_authenticated")
+  const { data: profile } = await supabase.from("profiles").select("org_id, role").eq("id", user.id).maybeSingle()
+  if (!profile?.org_id) throw new Error("no_org")
+  if (profile.role !== "owner" && profile.role !== "admin_dep") throw new Error("forbidden_slave")
+  const { error } = await supabase.from("articles").update({ prix_unitaire_ht }).eq("id", id).eq("org_id", profile.org_id)
+  if (error) throw new Error(error.message)
+  revalidatePath("/app/parametres/defauts")
+  return { ok: true }
+}

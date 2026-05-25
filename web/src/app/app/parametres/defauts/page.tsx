@@ -5,7 +5,7 @@ import { Card, CardTitle } from "@/components/ui/card"
 import { Input, Label } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { redirect } from "next/navigation"
-import { seedDefaultArticles } from "@/lib/actions/articles"
+import { seedDefaultArticles, updateArticlePrice } from "@/lib/actions/articles"
 
 export const dynamic = "force-dynamic"
 
@@ -36,6 +36,14 @@ export default async function DefautsPage(props: { searchParams: Promise<Record<
   const { data: profile } = await supabase.from("profiles").select("org_id, role").eq("id", user!.id).maybeSingle()
   const { data: org } = await supabase.from("orgs").select("*").eq("id", profile!.org_id!).maybeSingle()
   const isOwner = profile?.role === "owner" || profile?.role === "admin_dep"
+  const { data: articles } = await supabase
+    .from("articles")
+    .select("id, nom, categorie, prix_unitaire_ht, unite")
+    .eq("org_id", profile!.org_id!)
+    .eq("archived", false)
+    .order("categorie", { ascending: true })
+    .order("nom", { ascending: true })
+    .limit(200)
 
   return (
     <div className="max-w-5xl mx-auto p-6 sm:p-10 space-y-6">
@@ -168,6 +176,42 @@ export default async function DefautsPage(props: { searchParams: Promise<Record<
           {searchParams?.catalogue === "exists" && (
             <p className="mt-2 text-xs text-muted">ℹ️ Articles déjà présents (aucun doublon).</p>
           )}
+        </Card>
+      )}
+
+      {/* Liste des articles avec prix modifiables */}
+      {isOwner && articles && articles.length > 0 && (
+        <Card>
+          <CardTitle className="mb-4">📋 Liste des articles ({articles.length})</CardTitle>
+          <p className="text-sm text-muted mb-4">Cliquez sur un prix pour le modifier.</p>
+          <div className="space-y-1 max-h-[500px] overflow-y-auto">
+            {articles.map((a) => (
+              <form
+                key={a.id}
+                className="grid grid-cols-[1fr,auto,auto] gap-2 items-center py-1.5 px-2 rounded hover:bg-surface-2 text-sm"
+                action={async (fd: FormData) => {
+                  "use server"
+                  const price = Number(fd.get("price"))
+                  if (price >= 0) await updateArticlePrice(a.id, price)
+                }}
+              >
+                <span className="truncate">{a.nom}</span>
+                <span className="text-[11px] text-muted px-2">{a.categorie}</span>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    name="price"
+                    step="0.01"
+                    min="0"
+                    defaultValue={a.prix_unitaire_ht ?? 0}
+                    className="w-20 text-right bg-transparent border border-border rounded px-2 py-1 text-sm focus:border-electric focus:outline-none"
+                  />
+                  <span className="text-muted text-xs">€</span>
+                  <button type="submit" className="text-[11px] text-electric hover:underline px-1">💾</button>
+                </div>
+              </form>
+            ))}
+          </div>
         </Card>
       )}
     </div>

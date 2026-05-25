@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
+import { sendEmail } from "@/lib/email/resend"
+import { devisEnvoiTemplate } from "@/lib/email/templates"
 
 const ItemSchema = z.object({
   id: z.string().optional(),
@@ -11,6 +13,7 @@ const ItemSchema = z.object({
   unite: z.string().default("u"),
   prix_unitaire_ht: z.coerce.number().nonnegative().default(0),
   article_id: z.string().nullable().optional(),
+  is_section: z.boolean().optional().default(false),
 })
 
 const ClientPayloadSchema = z.object({
@@ -143,9 +146,9 @@ export async function saveDevis(payload: DevisPayload, action: "draft" | "send" 
       article_id: it.article_id ?? null,
       ordre: i,
       description: it.description,
-      quantite: it.quantite,
-      unite: it.unite || "u",
-      prix_unitaire_ht: it.prix_unitaire_ht,
+      quantite: it.is_section ? 1 : it.quantite,
+      unite: it.is_section ? "" : (it.unite || "u"),
+      prix_unitaire_ht: it.is_section ? 0 : it.prix_unitaire_ht,
     }))
     const { error } = await admin.from("devis_items").insert(rows)
     if (error) throw new Error(error.message)
@@ -172,6 +175,40 @@ export async function saveDevis(payload: DevisPayload, action: "draft" | "send" 
         prix_unitaire_ht: it.prix_unitaire_ht,
         last_used_at: new Date().toISOString(),
       }).select("id")
+    }
+  }
+
+  // ── Envoi email si action=send ──
+  if (action === "send") {
+    try {
+      const { data: org } = await supabase.from("orgs").select("nom, email").eq("id", orgId).maybeSingle()
+      const { data: clientRec } = await supabase.from("clients").select("email, prenom, nom").eq("id", clientId).maybeSingle()
+      const clientEmail = data.client.email || clientRec?.email || ""
+      if (clientEmail) {
+        const signUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://dep-electrique.fr"}/signer/${devisId}`
+        const clientName = [clientRec?.prenom, clientRec?.nom].filter(Boolean).join(" ") || data.client.nom
+        const totalItems = data.items.reduce((s, it) => s + Number(it.quantite) * Number(it.prix_unitaire_ht), 0)
+        const totalHT = totalItems + (data.heures_main_oeuvre || 0) * (data.taux_horaire || 0)
+        const totalTTC = totalHT + totalHT * (data.tva_taux || 20) / 100
+        const fmt = (n: number) => `${n.toFixed(2).replace(".", ",")} €`
+
+        const emailOpts = {
+          clientName,
+          numero: `DEP-${devisId?.slice(0, 8).toUpperCase() || ""}`,
+          totalTtc: fmt(totalTTC),
+          signUrl,
+          patron: "Votre artisan",
+          patronEntreprise: (org as { nom?: string })?.nom || "DEP Électricité",
+        }
+        await sendEmail({
+          to: clientEmail,
+          ...devisEnvoiTemplate(emailOpts),
+        })
+        await admin.from("devis").update({ date_envoi_email: new Date().toISOString() }).eq("id", devisId)
+      }
+    } catch (e) {
+      console.warn("[saveDevis] email send failed:", e instanceof Error ? e.message : e)
+      // Non bloquant — le devis est sauvegardé même si l'email échoue
     }
   }
 

@@ -236,6 +236,10 @@ function DevisEditorInner({
     setItems((p) => [...p, { description: "", quantite: 1, unite: "u", prix_unitaire_ht: 0 }])
   }
 
+  function addSection() {
+    setItems((p) => [...p, { description: "", quantite: 1, unite: "", prix_unitaire_ht: 0, is_section: true }])
+  }
+
   function updateLine(idx: number, patch: Partial<DevisPayload["items"][number]>) {
     setItems((p) => p.map((it, i) => (i === idx ? { ...it, ...patch } : it)))
   }
@@ -582,6 +586,9 @@ function DevisEditorInner({
                 <Button variant="secondary" size="sm" onClick={addLine}>
                   <Plus className="h-4 w-4" /> Ligne
                 </Button>
+                <Button variant="ghost" size="sm" onClick={addSection} className="text-wire-blue">
+                  <Plus className="h-4 w-4" /> Section
+                </Button>
               </div>
             </div>
 
@@ -603,6 +610,25 @@ function DevisEditorInner({
                   )}
                   {items.map((it, i) => {
                     const total = (Number(it.quantite) || 0) * (Number(it.prix_unitaire_ht) || 0)
+                    if (it.is_section) {
+                      return (
+                        <tr key={i} className="border-b border-border/40">
+                          <td colSpan={6} className="py-2 pr-2">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={it.description}
+                                onChange={(e) => updateLine(i, { description: e.target.value })}
+                                placeholder="Nom de la section (ex: SALON)"
+                                className="font-bold text-base border-electric/30 bg-electric/5"
+                              />
+                              <button onClick={() => removeLine(i)} aria-label="Supprimer" className="grid h-8 w-8 place-items-center rounded text-muted hover:text-danger shrink-0">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    }
                     return (
                       <tr key={i} className="border-b border-border/60">
                         <td className="py-2 pr-2">
