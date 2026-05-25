@@ -159,7 +159,8 @@ function DevisEditorInner({
     if (extracted.notes && !notesClient) setNotesClient(extracted.notes)
     if (extracted.client_hint && !client.nom) setClient((c) => ({ ...c, nom: extracted.client_hint! }))
     setPendingVoice(null)
-    setStep(2) // vers Articles pour voir ce qui a été ajouté
+    // Pas de setStep — on reste sur l'étape courante (Client par défaut)
+    // pour que l'user puisse vérifier TOUS les champs remplis
     setReviewNeeded(true)
     const rawPreview = (pendingVoice.raw || "").slice(0, 120)
     toast.success(
