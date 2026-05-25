@@ -2,10 +2,10 @@
 import { useEffect, useRef, useState } from "react"
 import { Mic, Square, Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { ExtractedDevis } from "@/lib/llm/dashscope"
 import type { Clarification } from "@/lib/llm/clarify"
+import { useLiveTranscript } from "@/lib/use-live-transcript"
 
 interface Result {
   raw: string
@@ -21,12 +21,20 @@ interface Result {
   }
 }
 
+export interface PartialResult {
+  text: string                  // texte LIVE en cours (peut changer)
+  extracted: ExtractedDevis     // extraction partielle à appliquer (merge dans parent)
+}
+
 export function VoiceRecorder({
   onResult,
+  onPartialResult,
   className,
   large = true,
 }: {
   onResult: (r: Result) => void
+  /** Appelé pendant l'enregistrement à chaque pause (~1.5s) avec extraction partielle. */
+  onPartialResult?: (p: PartialResult) => void
   className?: string
   large?: boolean
 }) {
@@ -34,14 +42,47 @@ export function VoiceRecorder({
   const [transcribing, setTranscribing] = useState(false)
   const [seconds, setSeconds] = useState(0)
   const [level, setLevel] = useState(0)
+  const [extractingLive, setExtractingLive] = useState(false)
   const chunksRef = useRef<Blob[]>([])
   const mediaRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const tickRef = useRef<number | null>(null)
   const tStartRef = useRef<number>(0)
+  const lastExtractedTextRef = useRef<string>("")
+
+  const live = useLiveTranscript({ lang: "fr-FR" })
 
   useEffect(() => () => stopStream(), [])
+
+  // ===== STREAMING LIVE : extraction partielle à chaque pause (≥1.2s sans nouveau mot) =====
+  // Tant qu'on enregistre, on accumule le texte du browser (live.finalText + live.interim).
+  // Quand l'utilisateur fait une pause naturelle, on POST le texte cumulé à /api/voice/extract-text.
+  // Le parent reçoit l'extraction partielle via onPartialResult et met à jour les champs en live.
+  useEffect(() => {
+    if (!recording || !onPartialResult || !live.isSupported) return
+    const pauseMs = live.msSinceLastWord ?? 0
+    if (pauseMs < 1200) return
+    const fullText = (live.finalText + (live.interim ? " " + live.interim : "")).trim()
+    if (!fullText || fullText.length < 8) return
+    if (fullText === lastExtractedTextRef.current) return // déjà extrait
+    lastExtractedTextRef.current = fullText
+    setExtractingLive(true)
+    fetch("/api/voice/extract-text", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: fullText }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.ok && data.extracted) {
+          onPartialResult({ text: fullText, extracted: data.extracted })
+        }
+      })
+      .catch(() => { /* silent */ })
+      .finally(() => setExtractingLive(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live.msSinceLastWord, recording, onPartialResult, live.isSupported])
 
   function stopStream() {
     streamRef.current?.getTracks().forEach((t) => t.stop())
@@ -71,6 +112,10 @@ export function VoiceRecorder({
       mr.start(250)
       setRecording(true)
       tStartRef.current = Date.now()
+      lastExtractedTextRef.current = ""
+      // Démarre la transcription LIVE browser en parallèle (si supporté)
+      live.reset()
+      live.start()
       animate(stream)
       // Auto-stop at 120s safeguard
       setTimeout(() => mr.state === "recording" && stop(), 120_000)
@@ -83,6 +128,7 @@ export function VoiceRecorder({
     if (mediaRef.current && mediaRef.current.state !== "inactive") {
       mediaRef.current.stop()
     }
+    live.stop()
     setRecording(false)
   }
 
@@ -179,6 +225,12 @@ export function VoiceRecorder({
           <p className="text-sm">
             <span className="font-mono text-foreground">{formatSeconds(seconds)}</span>{" "}
             <span className="text-muted">· parlez normalement…</span>
+            {extractingLive && (
+              <span className="ml-2 inline-flex items-center gap-1 text-[11px] text-electric">
+                <Sparkles className="h-3 w-3 animate-pulse" />
+                je remplis…
+              </span>
+            )}
           </p>
         ) : transcribing ? (
           <p className="text-sm text-muted inline-flex items-center gap-2">
@@ -189,6 +241,31 @@ export function VoiceRecorder({
           <p className="text-sm text-muted">Appuyez pour décrire votre chantier.</p>
         )}
       </div>
+
+      {/* PANNEAU LIVE : ce que le browser entend en direct (Web Speech API).
+          Visible pendant l'enregistrement uniquement. Donne confiance à l'user :
+          "ah oui il a bien capté ce que je viens de dire". */}
+      {recording && live.isSupported && (
+        <div className="w-full max-w-xl rounded-[var(--radius)] border border-electric/40 bg-electric/5 px-4 py-3 text-left">
+          <div className="text-[10px] uppercase tracking-[0.16em] text-electric mb-1.5">Vous dites</div>
+          <p className="text-sm leading-relaxed text-foreground/90 min-h-[1.5rem]">
+            {live.finalText ? (
+              <span>{live.finalText}</span>
+            ) : null}
+            {live.interim ? (
+              <span className="text-muted italic"> {live.interim}</span>
+            ) : null}
+            {!live.finalText && !live.interim && (
+              <span className="text-muted italic">en attente de votre voix…</span>
+            )}
+          </p>
+        </div>
+      )}
+      {recording && !live.isSupported && (
+        <p className="text-[11px] text-muted-2 text-center">
+          (Aperçu live indisponible sur ce navigateur — la transcription complète arrivera après le stop.)
+        </p>
+      )}
     </div>
   )
 }

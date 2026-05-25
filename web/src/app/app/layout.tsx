@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { Sidebar } from "@/components/app/sidebar"
 import { MobileTopbar } from "@/components/app/topbar"
+import { BottomNav } from "@/components/app/bottom-nav"
 
 export const dynamic = "force-dynamic"
 
@@ -32,7 +33,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <Sidebar profile={profile} org={org} />
       <div className="flex-1 min-w-0 flex flex-col">
         <MobileTopbar />
-        <main className="flex-1 overflow-x-hidden">{children}</main>
+        <main className="flex-1 overflow-x-hidden pb-20 lg:pb-0">{children}</main>
+        <BottomNav />
       </div>
     </div>
   )

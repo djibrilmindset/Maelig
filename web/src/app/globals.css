@@ -466,3 +466,11 @@ body {
 
 /* ── Selection ── */
 ::selection { background: var(--electric); color: #000; }
+
+/* ── Safe area pour téléphones à notch ── */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pb-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

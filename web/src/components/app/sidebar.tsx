@@ -23,18 +23,38 @@ import { cn, initials } from "@/lib/utils"
 type ProfileLite = { full_name: string | null; email: string | null; role: string }
 type OrgLite = { nom: string | null }
 
+// Pastille de couleur (dot) pour chaque catégorie : distinction visuelle immédiate
+// pour utilisateurs seniors qui distinguent mieux par couleur que par texte.
+// Sémantique :
+//   electric (jaune) = action principale (créer)
+//   amber   = en attente d'action utilisateur (à valider)
+//   blue    = en attente externe (client)
+//   purple  = en cours (signé, pas encore payé)
+//   red     = urgent (facture, incident)
+//   gray    = terminé (archive)
+type Dot = "electric" | "amber" | "blue" | "purple" | "red" | "gray" | undefined
+
+const DOT_CLASS: Record<Exclude<Dot, undefined>, string> = {
+  electric: "bg-electric",
+  amber: "bg-amber-400",
+  blue: "bg-sky-400",
+  purple: "bg-purple-400",
+  red: "bg-wire-red",
+  gray: "bg-muted",
+}
+
 const NAV = [
   { href: "/app", label: "Tableau de bord", Icon: LayoutDashboard },
   { type: "section", label: "Devis" },
-  { href: "/app/devis/nouveau", label: "Créer un devis", Icon: FilePlus2, accent: true },
-  { href: "/app/devis/a-valider", label: "À valider (employés)", Icon: ShieldCheck, ownerOnly: true },
-  { href: "/app/devis/attente-validation", label: "En attente du client", Icon: Hourglass },
-  { href: "/app/devis/signes", label: "Signés · pas encore payés", Icon: FileCheck },
-  { href: "/app/devis/factures-en-attente", label: "Factures en attente", Icon: Receipt },
-  { href: "/app/devis/archives", label: "Payées · abandonnées", Icon: Archive },
+  { href: "/app/devis/nouveau", label: "Créer un devis", Icon: FilePlus2, accent: true, dot: "electric" as Dot },
+  { href: "/app/devis/a-valider", label: "À valider (employés)", Icon: ShieldCheck, ownerOnly: true, dot: "amber" as Dot },
+  { href: "/app/devis/attente-validation", label: "En attente du client", Icon: Hourglass, dot: "blue" as Dot },
+  { href: "/app/devis/signes", label: "Signés · pas encore payés", Icon: FileCheck, dot: "purple" as Dot },
+  { href: "/app/devis/factures-en-attente", label: "Factures en attente", Icon: Receipt, dot: "red" as Dot },
+  { href: "/app/devis/archives", label: "Payées · abandonnées", Icon: Archive, dot: "gray" as Dot },
   { type: "section", label: "Chantiers" },
-  { href: "/app/incidents", label: "Galères de chantier", Icon: AlertTriangle },
-  { href: "/app/incidents/nouveau", label: "Signaler un problème", Icon: AlertTriangle, employeeAccent: true },
+  { href: "/app/incidents", label: "Galères de chantier", Icon: AlertTriangle, dot: "red" as Dot },
+  { href: "/app/incidents/nouveau", label: "Signaler un problème", Icon: AlertTriangle, employeeAccent: true, dot: "red" as Dot },
   { type: "section", label: "Ressources" },
   { href: "/app/clients", label: "Clients", Icon: Users },
   { href: "/app/catalogue", label: "Catalogue d'articles", Icon: PackageSearch },
@@ -64,7 +84,7 @@ export function Sidebar({ profile, org }: { profile: ProfileLite | null; org: Or
               </div>
             )
           }
-          const navItem = item as { href: string; label: string; Icon: typeof LayoutDashboard; accent?: boolean; ownerOnly?: boolean; employeeAccent?: boolean; adminOnly?: boolean }
+          const navItem = item as { href: string; label: string; Icon: typeof LayoutDashboard; accent?: boolean; ownerOnly?: boolean; employeeAccent?: boolean; adminOnly?: boolean; dot?: Dot }
           if (navItem.ownerOnly && profile?.role === "slave") return null
           if (navItem.adminOnly && profile?.role !== "admin_dep") return null
           return (
@@ -83,7 +103,16 @@ export function Sidebar({ profile, org }: { profile: ProfileLite | null; org: Or
               )}
             >
               <navItem.Icon className={cn("h-4 w-4", navItem.accent && "text-black", navItem.employeeAccent && "text-wire-red")} />
-              <span className="truncate">{navItem.label}</span>
+              <span className="truncate flex-1">{navItem.label}</span>
+              {navItem.dot && !navItem.accent && !navItem.employeeAccent && (
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "ml-auto h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-background",
+                    DOT_CLASS[navItem.dot],
+                  )}
+                />
+              )}
             </Link>
           )
         })}
