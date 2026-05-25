@@ -90,7 +90,14 @@ function DevisEditorInner({
       items: Array<{ description: string; quantity: number; unit: string; category?: string }>
       heures_main_oeuvre?: number
       chantier_adresse?: string
-      client_hint?: string
+      chantier_objet?: string
+      client_nom?: string
+      client_prenom?: string
+      client_telephone?: string
+      client_email?: string
+      client_adresse?: string
+      client_ville?: string
+      client_cp?: string
       notes?: string
     }
     clarification?: Clarification | null
@@ -130,7 +137,14 @@ function DevisEditorInner({
         items: r.extracted.items || [],
         heures_main_oeuvre: r.extracted.heures_main_oeuvre,
         chantier_adresse: r.extracted.chantier_adresse,
-        client_hint: r.extracted.client_hint,
+        chantier_objet: r.extracted.chantier_objet,
+        client_nom: r.extracted.client_nom,
+        client_prenom: r.extracted.client_prenom,
+        client_telephone: r.extracted.client_telephone,
+        client_email: r.extracted.client_email,
+        client_adresse: r.extracted.client_adresse,
+        client_ville: r.extracted.client_ville,
+        client_cp: r.extracted.client_cp,
         notes: r.extracted.notes,
       },
       clarification: r.clarification ?? null,
@@ -156,8 +170,16 @@ function DevisEditorInner({
     setItems((prev) => [...prev, ...additions])
     if (extracted.heures_main_oeuvre && !heuresMO) setHeuresMO(extracted.heures_main_oeuvre)
     if (extracted.chantier_adresse && !chantier) setChantier(extracted.chantier_adresse)
+    if (extracted.chantier_objet && !objet) setObjet(extracted.chantier_objet)
     if (extracted.notes && !notesClient) setNotesClient(extracted.notes)
-    if (extracted.client_hint && !client.nom) setClient((c) => ({ ...c, nom: extracted.client_hint! }))
+    // Champs client structurés — chaque info va dans son champ dédié
+    if (extracted.client_nom && !client.nom) setClient((c) => ({ ...c, nom: extracted.client_nom! }))
+    if (extracted.client_prenom && !client.prenom) setClient((c) => ({ ...c, prenom: extracted.client_prenom! }))
+    if (extracted.client_telephone && !client.telephone) setClient((c) => ({ ...c, telephone: extracted.client_telephone! }))
+    if (extracted.client_email && !client.email) setClient((c) => ({ ...c, email: extracted.client_email! }))
+    if (extracted.client_adresse && !client.adresse) setClient((c) => ({ ...c, adresse: extracted.client_adresse! }))
+    if (extracted.client_ville && !client.ville) setClient((c) => ({ ...c, ville: extracted.client_ville! }))
+    if (extracted.client_cp && !client.cp) setClient((c) => ({ ...c, cp: extracted.client_cp! }))
     setPendingVoice(null)
     // Pas de setStep — on reste sur l'étape courante (Client par défaut)
     // pour que l'user puisse vérifier TOUS les champs remplis

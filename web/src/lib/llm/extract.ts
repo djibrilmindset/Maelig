@@ -13,8 +13,15 @@ export async function extractDevis(
   transcript: string,
   knownArticles: string[] = [],
 ): Promise<{
-  client_hint?: string
+  client_nom?: string
+  client_prenom?: string
+  client_telephone?: string
+  client_email?: string
+  client_adresse?: string
+  client_ville?: string
+  client_cp?: string
   chantier_adresse?: string
+  chantier_objet?: string
   heures_main_oeuvre?: number
   items: Array<{ description: string; quantity: number; unit: string; category?: string }>
   notes?: string
@@ -37,10 +44,17 @@ L'électricien parle naturellement comme à un collègue. Tu dois EXTRAIRE l'int
 
 Renvoie STRICTEMENT un JSON conforme à ce schéma:
 {
-  "client_hint": "string|null",
-  "chantier_adresse": "string|null",
-  "heures_main_oeuvre": number|null,
-  "notes": "string|null",
+  "client_nom": "string|null",        // nom de famille
+  "client_prenom": "string|null",     // prénom
+  "client_telephone": "string|null",  // numéro de téléphone
+  "client_email": "string|null",      // email si mentionné
+  "client_adresse": "string|null",    // adresse du client (rue, numéro)
+  "client_ville": "string|null",      // ville du client
+  "client_cp": "string|null",         // code postal
+  "chantier_adresse": "string|null",  // adresse du chantier si différente
+  "chantier_objet": "string|null",    // objet du devis (ex: 'Rénovation électrique appartement')
+  "heures_main_oeuvre": number|null,  // heures de pose
+  "notes": "string|null",             // toute info utile (urgence, accès, fourniture client…)
   "items": [
     {
       "description": "string",
@@ -56,8 +70,10 @@ Règles d'extraction :
 - Unités : u (unité), m (mètre), m2, ml (mètre linéaire), h (heure), jour (8h), kg, ens (ensemble)
 - 'différentiel quarante ampères' → description: 'Interrupteur différentiel 40A 30mA type AC'
 - 'cinq prises' → qty: 5, description: 'Prise 16A 2P+T'
-- N'invente jamais de matériel non mentionné. Pas de 'goulotte' si pas dit.
-- Garde les noms propres, adresses, téléphones EXACTEMENT comme dits.`
+- N'invente jamais de matériel non mentionné.
+- Sépare bien le nom et prénom du client. Ex: 'Madame Martin' → client_nom: 'Martin', client_prenom: null
+- Extrais le téléphone, l'adresse, la ville et le CP séparément si mentionnés.
+- Garde les adresses EXACTEMENT comme dites : '34 bis avenue Kennedy' inchangé.`
 
   const res = await fetch(`${BASE}/v1/chat/completions`, {
     method: "POST",
@@ -90,16 +106,30 @@ Règles d'extraction :
 
   try {
     const parsed = JSON.parse(text) as {
-      client_hint?: string
+      client_nom?: string
+      client_prenom?: string
+      client_telephone?: string
+      client_email?: string
+      client_adresse?: string
+      client_ville?: string
+      client_cp?: string
       chantier_adresse?: string
+      chantier_objet?: string
       heures_main_oeuvre?: number
       items?: Array<{ description: string; quantity: number; unit: string; category?: string }>
       notes?: string
     }
 
     return {
-      client_hint: parsed.client_hint || undefined,
+      client_nom: parsed.client_nom || undefined,
+      client_prenom: parsed.client_prenom || undefined,
+      client_telephone: parsed.client_telephone || undefined,
+      client_email: parsed.client_email || undefined,
+      client_adresse: parsed.client_adresse || undefined,
+      client_ville: parsed.client_ville || undefined,
+      client_cp: parsed.client_cp || undefined,
       chantier_adresse: parsed.chantier_adresse || undefined,
+      chantier_objet: parsed.chantier_objet || undefined,
       heures_main_oeuvre:
         typeof parsed.heures_main_oeuvre === "number" ? parsed.heures_main_oeuvre : undefined,
       items: Array.isArray(parsed.items)
