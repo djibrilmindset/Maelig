@@ -2,8 +2,7 @@ import { NextResponse } from "next/server"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
 import { transcribeAudioFromUrl } from "@/lib/llm/asr"
-import { correctFR, extractDevisFromTranscript } from "@/lib/llm/dashscope"
-import { extractDevisFallback } from "@/lib/llm/deepseek"
+import { extractDevis } from "@/lib/llm/extract"
 import { clarifyTranscript } from "@/lib/llm/clarify"
 import { limitVoice, limitVoiceDaily, checkLimits, tooManyRequests } from "@/lib/ratelimit"
 import { checkMagic, safeExtFromMime } from "@/lib/security/file-magic"
@@ -81,12 +80,11 @@ export async function POST(req: Request) {
     .order("usage_count", { ascending: false })
     .limit(120)
 
-  // ===== PIPELINE 3-étapes (séquentiel, demande user 2026-05-20) =====
-  // 1. ASR brut (qwen3-asr-flash, $0.005/min, ~3s)
-  // 2. Correction + traduction FR propre (qwen-turbo, $0.05/1M tokens, ~1.5s)
-  //    → garantit que l'extraction se fait sur du français propre
-  // 3. Extraction structurée articles + client + adresse (qwen-plus, $0.40/1M, ~2s)
-  // Total : ~6-7s, coût ~$0.00003 par devis
+  // ===== PIPELINE SIMPLIFIÉE 2026-05-25 =====
+  // 1. ASR (DashScope qwen3-asr-flash)
+  // 2. Extraction directe via DeepSeek V4 Flash (deepseek-chat, quasi gratuit)
+  //    Plus de correctFR — le raw ASR est suffisant pour l'extraction LLM.
+  //    DashScope Alibaba supprimé (compte en arrearage).
   let rawText = ""
   let langDetected: string | undefined
   try {
@@ -98,36 +96,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "asr_failed", detail: msg }, { status: 502 })
   }
 
-  // ÉTAPE 2 — Correction + traduction FR propre AVANT extraction
-  // Si la langue détectée n'est pas FR, correctFR traduit aussi. Cf. dashscope.ts.
-  let corrected = rawText
-  try {
-    corrected = await correctFR(rawText, { orgId: profile.org_id, userId: user.id })
-  } catch (e) {
-    console.warn("[transcribe] correctFR failed, fallback rawText:", e instanceof Error ? e.message : e)
-  }
-
-  // ÉTAPE 3 — Extraction structurée SUR LE BRUT ASR (rawText)
-  // La correction FR (corrected) est UNIQUEMENT pour l'affichage dans le UI.
-  // L'extraction sur le brut préserve les noms propres, adresses, "bis", téléphones
-  // que correctFR pourrait reformuler/détruire. Bug fix 2026-05-25.
+  // ÉTAPE 2 — Extraction structurée via DeepSeek V4 Flash
+  // DeepSeek est quasi gratuit (~$0.00005/appel) et supporte JSON mode.
   const articleNames = (articles ?? []).map((a) => a.nom)
-  let extracted: Awaited<ReturnType<typeof extractDevisFromTranscript>> = { items: [] as const }
-  let extractFallbackUsed = false
+
+  let extracted: Awaited<ReturnType<typeof extractDevis>> = { items: [] }
   let extractError: string | null = null
   try {
-    extracted = await extractDevisFromTranscript(rawText, articleNames)
+    extracted = await extractDevis(rawText, articleNames)
   } catch (e) {
     extractError = e instanceof Error ? e.message : String(e)
-    console.warn("[transcribe] DashScope extract failed, trying DeepSeek fallback:", extractError)
-    // Fallback: DeepSeek V4 Pro (DEEPSEEK_API_KEY disponible sur Vercel)
-    try {
-      extracted = await extractDevisFallback(rawText, articleNames)
-      extractFallbackUsed = true
-    } catch (e2) {
-      console.error("[transcribe] DeepSeek fallback also failed:", e2 instanceof Error ? e2.message : e2)
-      extracted = { items: [] as const }
-    }
+    console.error("[transcribe] DeepSeek extract failed:", extractError)
+    extracted = { items: [] }
   }
 
   const [clarification, clarificationError] = await clarifyTranscript(rawText, { knownArticles: articleNames })
@@ -146,24 +126,21 @@ export async function POST(req: Request) {
     audio_size_bytes: buf.byteLength,
     lang_detected: langDetected ?? null,
     text_brut: rawText,
-    text_corrige: corrected,
-    text_traduit: corrected,
+    text_corrige: rawText,
+    text_traduit: rawText,
     articles_extracts: extracted as object,
-    llm_used: extractFallbackUsed
-      ? "qwen3-asr-flash → qwen-turbo (correct) → deepseek-chat (extract fallback)"
-      : "qwen3-asr-flash → qwen-turbo (correct/translate) → qwen-plus (extract)",
+    llm_used: "qwen3-asr-flash → deepseek-chat (extract)",
   })
 
   return NextResponse.json({
     ok: true,
     raw: rawText,
-    corrected,
+    corrected: rawText,
     language: langDetected,
     extracted,
     clarification,
     _diagnostic: {
       extract_error: extractError,
-      extract_fallback_used: extractFallbackUsed,
       clarify_error: clarificationError,
     },
   })
