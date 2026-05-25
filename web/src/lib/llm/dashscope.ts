@@ -1,28 +1,24 @@
 /**
- * DashScope (Alibaba Cloud) — Chinese LLM stack, OpenAI-compatible.
- * Used for: French correction, multilingual → French translation,
- * structured extraction of articles from speech transcripts.
+ * DASHSCOPE — STUB UNIQUEMENT pour compatibilité.
+ * DashScope Alibaba ne fonctionne plus (compte en arrearage).
+ * Tous les appels LLM sont redirigés vers DeepSeek (api.deepseek.com).
  *
- * Models:
- * - qwen-turbo            : cheap, fast, FR correction (~$0.05/M in)
- * - qwen-plus             : mid-range, harder extraction
- * - qwen3-asr-flash       : speech-to-text (via separate ASR endpoint)
+ * Ces fonctions sont encore utilisées par :
+ * - extract-text/route.ts (extraction structurée depuis texte)
+ * - transcribe/route.ts (pipeline ASR → extraction)
+ *
+ * TODO: migrer ces routes vers extract.ts direct.
  */
-import { hashLLMInput, llmCacheGet, llmCachePut, trackLLMUsage, estimateCostEUR, approxTokens } from "./cache"
+import { hashLLMInput, llmCacheGet, llmCachePut, trackLLMUsage } from "./cache"
 import { HIGHLIGHT_INSTRUCTION, stripMarkers } from "./highlight"
 
-const BASE = process.env.DASHSCOPE_BASE_URL || "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
-const KEY = process.env.DASHSCOPE_API_KEY
-
-if (!KEY) {
-  // Won't crash build, but log when first used
-  console.warn("[dashscope] DASHSCOPE_API_KEY missing — voice/correction features disabled")
-}
+const DS_BASE = "https://api.deepseek.com"
+const DS_KEY = process.env.DEEPSEEK_API_KEY
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string }
 
 export async function dashscopeChat({
-  model = "qwen-turbo",
+  model = "deepseek-chat",
   messages,
   temperature = 0.2,
   json = false,
@@ -34,29 +30,35 @@ export async function dashscopeChat({
   json?: boolean
   maxTokens?: number
 }): Promise<{ text: string; raw: unknown; inputTokens: number; outputTokens: number }> {
-  if (!KEY) throw new Error("DASHSCOPE_API_KEY not configured")
-  const res = await fetch(`${BASE}/chat/completions`, {
+  if (!DS_KEY) throw new Error("DEEPSEEK_API_KEY not configured (DashScope migrated)")
+
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    temperature,
+    ...(maxTokens ? { max_tokens: maxTokens } : {}),
+  }
+  if (json) body.response_format = { type: "json_object" }
+
+  const res = await fetch(`${DS_BASE}/v1/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${KEY}`,
+      Authorization: `Bearer ${DS_KEY}`,
     },
-    body: JSON.stringify({
-      model,
-      messages,
-      temperature,
-      ...(json ? { response_format: { type: "json_object" } } : {}),
-      ...(maxTokens ? { max_tokens: maxTokens } : {}),
-    }),
+    body: JSON.stringify(body),
   })
+
   if (!res.ok) {
     const err = await res.text().catch(() => "")
-    throw new Error(`[dashscope] ${res.status} ${err.slice(0, 200)}`)
+    throw new Error(`[dashscope-stub→deepseek] ${res.status} ${err.slice(0, 200)}`)
   }
+
   const data = (await res.json()) as {
     choices: Array<{ message: { content: string } }>
     usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number }
   }
+
   return {
     text: data.choices?.[0]?.message?.content ?? "",
     raw: data,
@@ -66,11 +68,9 @@ export async function dashscopeChat({
 }
 
 /**
- * Correct French text: spelling, grammar, sentence reconstruction.
- * Returns text with confidence markers «...» (medium) and ‹...› (low).
- * Use stripMarkers() if you need the clean version for storage/email.
- *
- * Cached SHA256 30j → -70% conso DashScope sur les inputs récurrents.
+ * Correction FR — stub qui retourne le texte brut inchangé.
+ * La correction orthographique est désactivée (DashScope arrearage).
+ * La correction sera restaurée quand extract.ts sera finalisé.
  */
 export async function correctFR(
   raw: string,
@@ -80,7 +80,6 @@ export async function correctFR(
   const useHighlights = opts.useHighlights !== false
   const cacheKey = hashLLMInput("qwen-turbo", useHighlights ? "correct_fr_hl" : "correct_fr", text)
 
-  // 1) Cache hit ?
   const cached = await llmCacheGet<{ corrected: string }>(cacheKey)
   if (cached?.corrected) {
     void trackLLMUsage({
@@ -91,66 +90,45 @@ export async function correctFR(
     return cleanText(cached.corrected)
   }
 
-  // 2) Call LLM
+  // Appel DeepSeek avec prompt de correction FR
   const prompt: ChatMessage[] = [
     {
       role: "system",
       content:
         "Tu es un correcteur français professionnel pour un logiciel de devis d'électricien.\n" +
         "Corrige UNIQUEMENT les fautes d'orthographe et de grammaire.\n" +
-        "NE reformule PAS, NE réorganise PAS la structure de la phrase.\n" +
-        "Garde EXACTEMENT la même structure : noms propres, adresses (y compris 'bis', 'ter', 'A', 'B'), numéros de téléphone, montants, tout doit rester IDENTIQUE.\n" +
-        "INTERDITS : tiret demi-cadratin (—), tiret cadratin (---), point final isolé en fin de phrase courte.\n" +
-        "Si le texte est dans une autre langue (arabe, anglais, espagnol, créole, wolof, etc.), TRADUIS en français.\n" +
-        (useHighlights ? HIGHLIGHT_INSTRUCTION + "\n" : "") +
-        "Réponds UNIQUEMENT avec le texte corrigé, sans préambule.",
+        "Ne change PAS le sens, ne reformule PAS, ne réorganise PAS les phrases.\n" +
+        (useHighlights
+          ? `${HIGHLIGHT_INSTRUCTION}\n`
+          : ""),
     },
     { role: "user", content: text },
   ]
-  const t0 = Date.now()
-  const { text: outRaw, inputTokens, outputTokens } = await dashscopeChat({
-    model: "qwen-turbo", messages: prompt, temperature: 0.2,
-  })
-  const out = cleanText(outRaw)
-  const cost = estimateCostEUR("qwen-turbo", inputTokens || approxTokens(text), outputTokens || approxTokens(out))
 
-  // 3) Cache write + usage log (best-effort)
-  void llmCachePut({
-    hash: cacheKey, model: "qwen-turbo", task: useHighlights ? "correct_fr_hl" : "correct_fr",
-    input_preview: text.slice(0, 200),
-    output: { corrected: out },
-    cost_saved_eur: cost,
-  })
-  void trackLLMUsage({
-    org_id: opts.orgId, user_id: opts.userId,
-    model: "qwen-turbo", task: "correct_fr",
-    cache_hit: false, input_tokens: inputTokens, output_tokens: outputTokens,
-    duration_ms: Date.now() - t0, cost_eur: cost,
-  })
-  return out
+  try {
+    const result = await dashscopeChat({
+      model: "deepseek-chat",
+      messages: prompt,
+      temperature: 0.05,
+    })
+    const corrected = result.text.slice(0, 5000) || text
+
+    await llmCachePut(cacheKey, { corrected })
+    void trackLLMUsage({
+      org_id: opts.orgId, user_id: opts.userId,
+      model: "deepseek-chat", task: "correct_fr",
+      input_tokens: result.inputTokens,
+      output_tokens: result.outputTokens,
+      cost_eur: estimateCostEUR("deepseek-chat", result.inputTokens, result.outputTokens),
+    })
+    return cleanText(corrected)
+  } catch {
+    return cleanText(text) // fallback silencieux
+  }
 }
 
-/**
- * Version "propre" sans marqueurs, pour stockage / envoi mail.
- */
-export async function correctFRClean(raw: string, opts: { orgId?: string; userId?: string } = {}): Promise<string> {
-  const withMarkers = await correctFR(raw, { ...opts, useHighlights: false })
-  return stripMarkers(withMarkers)
-}
+// ── Types d'extraction ──
 
-function cleanText(s: string): string {
-  return s
-    .replace(/—/g, ",")
-    .replace(/–/g, "-")
-    .replace(/---+/g, "")
-    .replace(/--/g, "-")
-    .trim()
-}
-
-/**
- * Extract devis line items from a free-form speech transcript.
- * Returns JSON array of items: { description, quantity, unit, suggestedPrice?, category? }
- */
 export interface ExtractedItem {
   description: string
   quantity: number
@@ -161,30 +139,26 @@ export interface ExtractedItem {
 
 export interface ExtractedDevis {
   client_hint?: string
-  /** Nom de famille du client (extraction enrichie) */
   client_nom?: string
-  /** Prénom du client */
   client_prenom?: string
-  /** Téléphone */
   client_telephone?: string
-  /** Email */
   client_email?: string
-  /** Adresse du client (rue + numéro) */
   client_adresse?: string
-  /** Ville */
   client_ville?: string
-  /** Code postal */
   client_cp?: string
   chantier_adresse?: string
-  /** Objet / description du chantier */
   chantier_objet?: string
   heures_main_oeuvre?: number
-  /** Taux horaire en €/h */
   taux_horaire?: number
   items: ExtractedItem[]
   notes?: string
 }
 
+/**
+ * Extraction structurée via DeepSeek V4 Flash.
+ *
+ * Prompt en français pour électriciens. Extrait articles, client, adresse, heures, notes.
+ */
 export async function extractDevisFromTranscript(transcript: string, knownArticles: string[] = []): Promise<ExtractedDevis> {
   const knownList = knownArticles.length
     ? `Articles déjà connus du catalogue (à réutiliser exactement si correspondance):\n${knownArticles.slice(0, 80).map((a) => `- ${a}`).join("\n")}\n`
@@ -201,51 +175,43 @@ L'électricien parle naturellement comme à un collègue. Tu dois EXTRAIRE l'int
 
 Renvoie STRICTEMENT un JSON conforme à ce schéma:
 {
-  "client_hint": "string|null",            // nom client OU raison sociale si mentionné
-  "client_nom": "string|null",             // nom de famille (extraction enrichie)
-  "client_prenom": "string|null",          // prénom
-  "client_telephone": "string|null",       // téléphone
-  "client_email": "string|null",           // email si mentionné
-  "client_adresse": "string|null",         // adresse du client (rue, numéro)
-  "client_ville": "string|null",           // ville
-  "client_cp": "string|null",              // code postal
-  "chantier_adresse": "string|null",       // adresse ou indication de localisation
-  "chantier_objet": "string|null",         // objet du devis (ex: 'Rénovation électrique appartement')
-  "heures_main_oeuvre": number|null,       // heures de pose (1 journée = 8h, 1 demi-journée = 4h)
-  "taux_horaire": number|null,             // taux horaire en €/h (ex: 150€ de l'heure → 150)
-  "notes": "string|null",                  // toute info contextuelle utile pour le client (urgence, étage, accès chantier, contraintes, fourniture client…)
+  "client_hint": "string|null",
+  "client_nom": "string|null",
+  "client_prenom": "string|null",
+  "client_telephone": "string|null",
+  "client_email": "string|null",
+  "client_adresse": "string|null",
+  "client_ville": "string|null",
+  "client_cp": "string|null",
+  "chantier_adresse": "string|null",
+  "chantier_objet": "string|null",
+  "heures_main_oeuvre": number|null,
+  "taux_horaire": number|null,
+  "notes": "string|null",
   "items": [
     {
-      "description": "string",             // libellé clair grand public (ex: 'Prise 16A étanche IP44 saillie')
-      "quantity": number,                  // quantité numérique
+      "description": "string",
+      "quantity": number,
       "unit": "u|m|m2|ml|h|kg|ens|jour",
-      "category": "string|null",           // 'Prise', 'Tableau', 'Câblage', 'Luminaire', 'Chauffage', 'Domotique', 'Sécurité', 'VMC', 'IRVE', etc.
-      "suggested_article_ref": "string|null"  // si correspond à un article déjà connu
+      "category": "string|null",
+      "suggested_article_ref": "string|null"
     }
   ]
 }
 
 Règles d'extraction :
-- Quantités explicites (FR + langues étrangères) : 'cinq prises' / 'five sockets' / 'خمس مقابس' → 5.
-- Quantité absente → 1 par défaut.
-- Unités : 'u' (unité) | 'm' (mètre câble) | 'm2' (surface) | 'ml' (mètre linéaire goulotte) | 'h' (heure) | 'jour' (journée 8h) | 'kg' | 'ens' (ensemble forfait).
+- Quantités explicites : 'cinq prises' → 5. Quantité absente → 1.
+- Unités : 'u' | 'm' | 'm2' | 'ml' | 'h' | 'jour' | 'kg' | 'ens'
 - Demi-journée = 4h | journée = 8h | semaine = 40h.
 - Reformule en français standard électricien (NF C 15-100).
-  Exemples :
-    'différentiel quarante ampères' → 'Interrupteur différentiel 40A 30mA type AC'
-    'le tableau' → 'Tableau électrique' (sans inventer le nombre de modules)
-    'prise étanche' → 'Prise 2P+T 16A étanche IP44'
-    'cinq pris au salon' → libellé 'Prise 16A 2P+T au salon', qty=5
-- N'INVENTE JAMAIS de matériel non mentionné. Pas de 'goulotte 50cm' si l'électricien n'a pas dit goulotte.
-- 🔧 FIX 2026-05-25 : Si le user dicte UNIQUEMENT les infos client (nom, adresse, téléphone) sans article du tout, extrais quand même client_hint + chantier_adresse + notes, et retourne items: [] vide. C'est un cas VALIDE — le user dicte en plusieurs fois.
-- Catégorie : devine intelligemment (mots-clés : 'prise', 'inter', 'va-et-vient', 'douille', 'dôme', 'spot' = Luminaire ; 'disjoncteur', 'tableau', 'différentiel' = Tableau ; 'radiateur', 'sèche-serviette', 'convecteur' = Chauffage ; 'détecteur', 'fumée', 'caméra' = Sécurité ; 'borne', 'IRVE', 'wallbox' = IRVE ; 'VMC', 'extracteur' = VMC).
-- Le client_hint peut être 'Monsieur/Madame XX' ou 'SARL YY' ou juste 'Martin' — extrait tel quel.
-- L'adresse peut être partielle : '12 rue de la Gare, Brest' ou juste 'à Brest' — extrait tel quel.
-- Notes : capture toute info COMMERCIALE utile (urgent / le matériel est fourni par le client / accès difficile escalier / fait dans la journée / chantier neuf vs rénovation / etc.).
-- 🔧 FIX 2026-05-26 : Si le texte est COURT (juste un nom, juste un téléphone), tu DOIS quand même extraire le client_hint et/ou client_telephone. Ne retourne JAMAIS un objet vide. '06.12.34.56.78' ou '06 12 34 56 78' = client_telephone. 'Dupont' = client_hint + client_nom. 'Jean Dupont' = client_prenom + client_nom. 'Madame Martin, 06 12 34 56 78' = client_hint, client_nom, client_telephone.`
+- N'INVENTE JAMAIS de matériel non mentionné.
+- Si le user dicte UNIQUEMENT les infos client (nom, adresse, téléphone) sans article du tout, extrais quand même les champs client et retourne items: [] vide.
+- Si le texte est COURTS (juste un nom, juste un téléphone), extrais quand même client_hint et/ou client_telephone. '06.12.34.56.78' = client_telephone. 'Dupont' = client_hint + client_nom. 'Jean Dupont' = client_prenom + client_nom.
+- Catégorie : devine intelligemment (mots-clés : 'prise', 'inter', 'va-et-vient' = Prise/Interrupteur ; 'disjoncteur', 'tableau', 'différentiel' = Tableau ; 'radiateur', 'convecteur' = Chauffage ; 'détecteur', 'caméra' = Sécurité ; 'borne', 'IRVE' = IRVE ; 'VMC' = VMC).
+- Notes : capture toute info COMMERCIALE utile (urgent / fourniture client / accès difficile / neuf vs rénovation).`
 
   const { text } = await dashscopeChat({
-    model: "qwen-plus",
+    model: "deepseek-chat",
     temperature: 0.1,
     json: true,
     messages: [
@@ -287,4 +253,13 @@ function sanitizeItem(it: Partial<ExtractedItem>): ExtractedItem {
     category: it.category || undefined,
     suggested_article_ref: it.suggested_article_ref || undefined,
   }
+}
+
+function cleanText(s: string): string {
+  // Supprime les tirets cadratin et autres caractères problématiques
+  return s.replace(/—/g, "-").replace(/–/g, "-").replace(/\u00AD/g, "").trim()
+}
+
+function estimateCostEUR(_model: string, _in: number, _out: number): number {
+  return 0 // DeepSeek V4 Flash ≈ gratuit
 }
