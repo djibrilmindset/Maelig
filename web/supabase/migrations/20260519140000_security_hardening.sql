@@ -11,6 +11,11 @@ declare
   v_role user_role;
   v_article_price numeric;
 begin
+  -- Service role bypass: auth.uid() IS NULL when using service_role key
+  if auth.uid() is null then
+    return new;
+  end if;
+
   select role into v_role from profiles where id = auth.uid();
   if v_role in ('owner','admin_dep') then
     return new;
