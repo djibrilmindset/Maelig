@@ -125,39 +125,14 @@ function DevisEditorInner({
     return true
   }
 
-  // UX 2026-05-25 : ClarifyCard réactivé — l'user voit ce qui a été extrait
-  // et confirme AVANT que les données soient injectées dans le formulaire.
+  // UX 2026-05-25 v2 : injection DIRECTE dans les champs, pas de ClarifyCard.
+  // Le LLM classe les infos dans les bons champs (nom, adresse, CP, téléphone...)
+  // et l'user peut corriger après dans le formulaire.
   function handleVoiceResult(r: VoiceData) {
     setTranscript({ raw: r.raw, corrected: r.corrected, language: r.language })
-    setPendingVoice({
-      raw: r.raw,
-      corrected: r.corrected,
-      language: r.language,
-      extracted: {
-        items: r.extracted.items || [],
-        heures_main_oeuvre: r.extracted.heures_main_oeuvre,
-        chantier_adresse: r.extracted.chantier_adresse,
-        chantier_objet: r.extracted.chantier_objet,
-        client_nom: r.extracted.client_nom,
-        client_prenom: r.extracted.client_prenom,
-        client_telephone: r.extracted.client_telephone,
-        client_email: r.extracted.client_email,
-        client_adresse: r.extracted.client_adresse,
-        client_ville: r.extracted.client_ville,
-        client_cp: r.extracted.client_cp,
-        notes: r.extracted.notes,
-      },
-      clarification: r.clarification ?? null,
-      _diagnostic: r._diagnostic,
-    })
     setShowVoice(false)
-    // Pas de setStep — on laisse le ClarifyCard s'afficher
-  }
 
-  function applyPendingVoice() {
-    if (!pendingVoice) return
-    const { extracted } = pendingVoice
-    const additions: DevisPayload["items"] = (extracted.items ?? []).map((it) => {
+    const additions: DevisPayload["items"] = (r.extracted.items ?? []).map((it) => {
       const match = knownArticles.find((a) => a.nom.toLowerCase() === it.description.toLowerCase())
       return {
         description: it.description,
@@ -168,30 +143,31 @@ function DevisEditorInner({
       }
     })
     setItems((prev) => [...prev, ...additions])
-    if (extracted.heures_main_oeuvre && !heuresMO) setHeuresMO(extracted.heures_main_oeuvre)
-    if (extracted.chantier_adresse && !chantier) setChantier(extracted.chantier_adresse)
-    if (extracted.chantier_objet && !objet) setObjet(extracted.chantier_objet)
-    if (extracted.notes && !notesClient) setNotesClient(extracted.notes)
-    // Champs client structurés — chaque info va dans son champ dédié
-    if (extracted.client_nom && !client.nom) setClient((c) => ({ ...c, nom: extracted.client_nom! }))
-    if (extracted.client_prenom && !client.prenom) setClient((c) => ({ ...c, prenom: extracted.client_prenom! }))
-    if (extracted.client_telephone && !client.telephone) setClient((c) => ({ ...c, telephone: extracted.client_telephone! }))
-    if (extracted.client_email && !client.email) setClient((c) => ({ ...c, email: extracted.client_email! }))
-    if (extracted.client_adresse && !client.adresse) setClient((c) => ({ ...c, adresse: extracted.client_adresse! }))
-    if (extracted.client_ville && !client.ville) setClient((c) => ({ ...c, ville: extracted.client_ville! }))
-    if (extracted.client_cp && !client.cp) setClient((c) => ({ ...c, cp: extracted.client_cp! }))
-    setPendingVoice(null)
-    // Pas de setStep — on reste sur l'étape courante (Client par défaut)
-    // pour que l'user puisse vérifier TOUS les champs remplis
+
+    if (r.extracted.heures_main_oeuvre && !heuresMO) setHeuresMO(r.extracted.heures_main_oeuvre)
+    if (r.extracted.chantier_adresse && !chantier) setChantier(r.extracted.chantier_adresse)
+    if (r.extracted.chantier_objet && !objet) setObjet(r.extracted.chantier_objet)
+    if (r.extracted.notes && !notesClient) setNotesClient(r.extracted.notes)
+
+    // Chaque info va dans son champ dédié
+    if (r.extracted.client_nom && !client.nom) setClient((c) => ({ ...c, nom: r.extracted.client_nom! }))
+    if (r.extracted.client_prenom && !client.prenom) setClient((c) => ({ ...c, prenom: r.extracted.client_prenom! }))
+    if (r.extracted.client_telephone && !client.telephone) setClient((c) => ({ ...c, telephone: r.extracted.client_telephone! }))
+    if (r.extracted.client_email && !client.email) setClient((c) => ({ ...c, email: r.extracted.client_email! }))
+    if (r.extracted.client_adresse && !client.adresse) setClient((c) => ({ ...c, adresse: r.extracted.client_adresse! }))
+    if (r.extracted.client_ville && !client.ville) setClient((c) => ({ ...c, ville: r.extracted.client_ville! }))
+    if (r.extracted.client_cp && !client.cp) setClient((c) => ({ ...c, cp: r.extracted.client_cp! }))
+
     setReviewNeeded(true)
-    const rawPreview = (pendingVoice.raw || "").slice(0, 120)
+
+    const rawPreview = (r.raw || "").slice(0, 120)
     toast.success(
       additions.length > 0
         ? `${additions.length} ligne(s) ajoutées`
         : "Aucun article détecté",
       {
         description: rawPreview
-          ? `Transcription : « ${rawPreview}${((pendingVoice.raw || "").length > 120) ? "…" : ""} »`
+          ? `Transcription : « ${rawPreview}${r.raw.length > 120 ? "…" : ""} »`
           : undefined,
         duration: 8000,
       },
