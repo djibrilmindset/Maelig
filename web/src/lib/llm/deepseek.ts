@@ -2,9 +2,11 @@
  * DeepSeek API — Fallback provider pour extraction structurée
  * quand DashScope (qwen-plus) est indisponible (compte impayé, timeout, etc.)
  *
- * Endpoint OpenAI-compatible : https://api.deepseek.com/v1
+ * ATTENTION : on hardcode l'URL api.deepseek.com ici — NE PAS utiliser
+ * DEEPSEEK_BASE_URL qui sur Vercel pointe vers Comet (proxy différent).
+ * Le fallback DOIT appeler DeepSeek directement pour garantir la compatibilité.
  */
-const BASE = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com"
+const BASE = "https://api.deepseek.com"
 const KEY = process.env.DEEPSEEK_API_KEY
 
 export interface ChatMessage {
