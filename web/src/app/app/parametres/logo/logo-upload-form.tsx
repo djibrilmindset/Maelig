@@ -1,16 +1,44 @@
 "use client"
 
-import { useActionState, useRef } from "react"
+import { useRef, useState } from "react"
 import { Upload, AlertCircle, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { uploadLogoAction } from "./actions"
 
 export function LogoUploadForm() {
-  const [state, formAction, pending] = useActionState(uploadLogoAction, { ok: false })
+  const [status, setStatus] = useState<{ ok?: boolean; error?: string } | null>(null)
+  const [pending, setPending] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setPending(true)
+    setStatus(null)
+
+    const fd = new FormData(e.currentTarget)
+    const file = fd.get("logo") as File
+    if (!file || file.size === 0) {
+      setStatus({ error: "Aucun fichier sélectionné" })
+      setPending(false)
+      return
+    }
+
+    try {
+      const res = await fetch("/api/upload-logo", { method: "POST", body: fd })
+      const data = await res.json()
+      if (data.ok) {
+        setStatus({ ok: true })
+        window.location.reload()
+      } else {
+        setStatus({ error: data.error || "Erreur inconnue" })
+      }
+    } catch (e) {
+      setStatus({ error: e instanceof Error ? e.message : "Erreur réseau" })
+    }
+    setPending(false)
+  }
+
   return (
-    <form ref={formRef} action={formAction} encType="multipart/form-data">
+    <form ref={formRef} onSubmit={handleSubmit} encType="multipart/form-data">
       <div className="text-xs uppercase tracking-wider text-muted mb-3">
         Télécharger un logo
       </div>
@@ -37,12 +65,12 @@ export function LogoUploadForm() {
 
       <div className="mt-4 flex items-center justify-between">
         <div>
-          {state?.error && (
+          {status?.error && (
             <p className="text-xs text-danger inline-flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" /> {state.error}
+              <AlertCircle className="h-3 w-3" /> {status.error}
             </p>
           )}
-          {state?.ok && (
+          {status?.ok && (
             <p className="text-xs text-success inline-flex items-center gap-1">
               <Check className="h-3 w-3" /> Logo mis à jour ✅
             </p>
