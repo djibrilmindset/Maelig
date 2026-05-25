@@ -79,7 +79,7 @@ Réponds STRICTEMENT en JSON conforme à ce schéma :
 Règles d'or :
 - INTERDIT : tirets — ou ---, points isolés en fin de courte phrase, formulations type IA ('certainement', 'voici', 'je vais', 'permettez-moi').
 - Si quantité absente : qty = 1 et confidence = "low".
-- Si tu ne comprends rien : summary = "Je n'ai pas compris", questions = ["Pouvez-vous redire en une phrase ?"]
+- Si des infos manquent : extrais ce que tu as compris, liste dans questions UNIQUEMENT ce qui manque (1-2 max). Ne dis jamais "Je n'ai pas compris" — extrais toujours le maximum.
 - Le ton est direct, chaleureux, comme un collègue. Pas robotique.
 - Dans summary, ${HIGHLIGHT_INSTRUCTION.split('\n').slice(1, 4).join(' ')}`,
   }
@@ -128,7 +128,7 @@ Règles d'or :
       client: null,
       site: null,
       labor_hours: null,
-      questions: ["Je n'ai pas tout saisi. Tu peux redire en une phrase ?"],
+      questions: ["Précise le client, l'adresse ou les articles si tu veux les ajouter."],
     }
   }
 }

@@ -48,7 +48,7 @@ export function ClarifyCard({
       </div>
 
       <HighlightedText
-        text={`« ${clarification.summary || "Je n'ai pas tout saisi."} »`}
+        text={`« ${clarification.summary || "Je n'ai pas tout saisi — précise le client ou les articles."} »`}
         className="mt-4 font-display text-xl sm:text-2xl font-semibold leading-snug"
       />
       {parseHighlightMarkers(clarification.summary).some((s) => s.confidence === "low" || s.confidence === "medium") && (

@@ -97,8 +97,9 @@ export async function correctFR(
       role: "system",
       content:
         "Tu es un correcteur français professionnel pour un logiciel de devis d'électricien.\n" +
-        "Reformule en français correct, clair et professionnel.\n" +
-        "Garde le sens technique (prises, tableau, disjoncteur, etc.).\n" +
+        "Corrige UNIQUEMENT les fautes d'orthographe et de grammaire.\n" +
+        "NE reformule PAS, NE réécris PAS les phrases.\n" +
+        "Garde EXACTEMENT la même structure : bis, noms propres, téléphones, adresses, chiffres.\n" +
         "INTERDITS : tiret demi-cadratin (—), tiret cadratin (---), point final isolé en fin de phrase courte.\n" +
         "Si le texte est dans une autre langue (arabe, anglais, espagnol, créole, wolof, etc.), TRADUIS en français.\n" +
         (useHighlights ? HIGHLIGHT_INSTRUCTION + "\n" : "") +

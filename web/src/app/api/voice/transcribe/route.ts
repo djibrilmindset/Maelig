@@ -106,15 +106,17 @@ export async function POST(req: Request) {
     console.warn("[transcribe] correctFR failed, fallback rawText:", e instanceof Error ? e.message : e)
   }
 
-  // ÉTAPE 3 — Extraction structurée sur le CORRIGÉ (français propre)
-  // Clarification optionnelle en parallèle (questions à poser au user si ambigu)
+  // ÉTAPE 3 — Extraction structurée SUR LE BRUT ASR (rawText)
+  // La correction FR (corrected) est UNIQUEMENT pour l'affichage dans le UI.
+  // L'extraction sur le brut préserve les noms propres, adresses, "bis", téléphones
+  // que correctFR pourrait reformuler/détruire. Bug fix 2026-05-25.
   const articleNames = (articles ?? []).map((a) => a.nom)
   const [extracted, clarification] = await Promise.all([
-    extractDevisFromTranscript(corrected, articleNames).catch((e) => {
+    extractDevisFromTranscript(rawText, articleNames).catch((e) => {
       console.warn("[transcribe] extract failed:", e instanceof Error ? e.message : e)
       return { items: [] as const }
     }),
-    clarifyTranscript(corrected, { knownArticles: articleNames }).catch(() => null),
+    clarifyTranscript(rawText, { knownArticles: articleNames }).catch(() => null),
   ])
 
   // Store transcription record (audit + replay debugging)
