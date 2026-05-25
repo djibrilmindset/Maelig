@@ -272,6 +272,13 @@ function DevisEditorInner({
     if (!client.nom?.trim()) { toast.error("Renseignez d'abord le client"); setStep(0); return }
     if (heuresMO > 0 && !tauxHoraire) { toast.error("Indiquez votre taux horaire pour la main-d'œuvre"); setStep(2); return }
     if (action === "send" && items.length === 0 && heuresMO === 0) { toast.error("Aucune ligne à envoyer"); setStep(2); return }
+    // Vérifie que toutes les lignes ont une description
+    const emptyLines = items.filter((it) => !it.description?.trim())
+    if (emptyLines.length > 0) {
+      toast.error(`${emptyLines.length} ligne(s) sans description`, { description: "Remplissez ou supprimez les lignes vides." })
+      setStep(2)
+      return
+    }
 
     const payload: DevisPayload = {
       id: initialPayload?.id,
