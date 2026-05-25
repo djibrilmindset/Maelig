@@ -1,52 +1,14 @@
 import Link from "next/link"
-import Image from "next/image"
-import { ArrowLeft, Upload, Trash2, Check } from "lucide-react"
+import { ArrowLeft, Trash2 } from "lucide-react"
 import { createSupabaseServerClient } from "@/lib/supabase/server"
 import { supabaseAdmin } from "@/lib/supabase/admin"
 import { Card, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
+import { LogoUploadForm } from "./logo-upload-form"
 
 export const dynamic = "force-dynamic"
-
-async function uploadLogo(formData: FormData) {
-  "use server"
-  const supabase = await createSupabaseServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: "non_authentifié" }
-  const { data: profile } = await supabase.from("profiles").select("org_id, role").eq("id", user.id).maybeSingle()
-  if (!profile?.org_id || (profile.role !== "owner" && profile.role !== "admin_dep")) return { error: "non_autorisé" }
-
-  const file = formData.get("logo") as File
-  if (!file || file.size === 0) return { error: "fichier_vide" }
-  if (!file.type.startsWith("image/")) return { error: "pas_une_image" }
-  if (file.size > 2 * 1024 * 1024) return { error: "trop_gros" }
-
-  const admin = supabaseAdmin()
-  const ext = file.name.split(".").pop() ?? "png"
-  const path = `${profile.org_id}/logo.${ext}`
-
-  const buf = Buffer.from(await file.arrayBuffer())
-
-  // Remove old logo first (any extension)
-  const { data: oldFiles } = await admin.storage.from("logos").list(profile.org_id, { search: "logo." })
-  if (oldFiles && oldFiles.length > 0) {
-    await admin.storage.from("logos").remove(oldFiles.map((f: { name: string }) => `${profile.org_id}/${f.name}`))
-  }
-
-  const { error: upErr } = await admin.storage.from("logos").upload(path, buf, {
-    contentType: file.type,
-    upsert: true,
-  })
-  if (upErr) return { error: upErr.message }
-
-  const { data: pubUrl } = admin.storage.from("logos").getPublicUrl(path)
-  await admin.from("orgs").update({ logo_url: pubUrl.publicUrl }).eq("id", profile.org_id)
-
-  revalidatePath("/app/parametres/logo")
-  redirect("/app/parametres/logo?ok=1")
-}
 
 async function removeLogo() {
   "use server"
@@ -90,13 +52,12 @@ export default async function LogoPage() {
           <div className="mb-6">
             <div className="text-xs uppercase tracking-wider text-muted mb-3">Logo actuel</div>
             <div className="inline-flex items-center justify-center rounded-xl border border-border bg-surface-2 p-6 max-w-xs">
-              <Image
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={org!.logo_url!}
                 alt="Logo de l'entreprise"
-                width={240}
-                height={120}
                 className="object-contain max-h-24"
-                style={{ width: "auto", height: "auto", maxWidth: 240, maxHeight: 96 }}
+                style={{ maxWidth: 240, maxHeight: 96 }}
               />
             </div>
             {isOwner && (
@@ -109,37 +70,8 @@ export default async function LogoPage() {
           </div>
         )}
 
-        {/* Upload form */}
-        {isOwner && (
-          <form action={uploadLogo}>
-            <div className="text-xs uppercase tracking-wider text-muted mb-3">
-              {hasLogo ? "Remplacer le logo" : "Télécharger un logo"}
-            </div>
-            <label
-              htmlFor="logo-upload"
-              className="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-surface-2 p-10 cursor-pointer hover:border-electric/50 hover:bg-surface-3 transition-colors"
-            >
-              <Upload className="h-8 w-8 text-muted-2" />
-              <div className="text-center">
-                <div className="text-sm font-medium">Cliquez pour choisir un fichier</div>
-                <div className="text-xs text-muted-2 mt-1">PNG, JPG ou SVG · Max 2 Mo</div>
-              </div>
-            </label>
-            <input
-              id="logo-upload"
-              name="logo"
-              type="file"
-              accept="image/png,image/jpeg,image/svg+xml,image/webp"
-              className="hidden"
-              required
-            />
-            <div className="mt-4 flex justify-end">
-              <Button type="submit">
-                <Upload className="h-4 w-4" /> Envoyer le logo
-              </Button>
-            </div>
-          </form>
-        )}
+        {/* Upload form — client component avec feedback */}
+        {isOwner && <LogoUploadForm />}
       </Card>
 
       {!isOwner && (
