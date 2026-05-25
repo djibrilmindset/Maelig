@@ -31,6 +31,7 @@ async function saveSociete(formData: FormData) {
     email: formData.get("email") as string,
     iban: formData.get("iban") as string,
     bic: formData.get("bic") as string,
+    conditions_reglement: formData.get("conditions_reglement") as string,
   }
 
   const { error } = await supabase.from("orgs").update(data).eq("id", profile.org_id)
@@ -140,6 +141,25 @@ export default async function SocietePage() {
               <Label htmlFor="bic">BIC / SWIFT</Label>
               <Input id="bic" name="bic" className="mt-2 font-mono" defaultValue={org?.bic ?? ""} placeholder="CMCIFRPP" />
             </div>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-4 w-4 text-electric" />
+            <h3 className="font-display font-semibold">Conditions de règlement</h3>
+          </div>
+          <p className="text-xs text-muted mb-4">Ces conditions apparaissent en bas de chaque devis.</p>
+          <div>
+            <Label htmlFor="conditions_reglement">Texte des conditions</Label>
+            <textarea
+              id="conditions_reglement"
+              name="conditions_reglement"
+              className="mt-2 flex min-h-[100px] w-full rounded-[var(--radius)] border border-border bg-surface px-4 py-3 text-sm text-foreground placeholder:text-muted-2 transition-colors focus-visible:border-electric focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)]/40"
+              defaultValue={org?.conditions_reglement ?? ""}
+              placeholder="Paiement à réception de facture..."
+              rows={4}
+            />
           </div>
         </Card>
 
