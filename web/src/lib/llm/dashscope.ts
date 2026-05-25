@@ -161,8 +161,26 @@ export interface ExtractedItem {
 
 export interface ExtractedDevis {
   client_hint?: string
+  /** Nom de famille du client (extraction enrichie) */
+  client_nom?: string
+  /** Prénom du client */
+  client_prenom?: string
+  /** Téléphone */
+  client_telephone?: string
+  /** Email */
+  client_email?: string
+  /** Adresse du client (rue + numéro) */
+  client_adresse?: string
+  /** Ville */
+  client_ville?: string
+  /** Code postal */
+  client_cp?: string
   chantier_adresse?: string
+  /** Objet / description du chantier */
+  chantier_objet?: string
   heures_main_oeuvre?: number
+  /** Taux horaire en €/h */
+  taux_horaire?: number
   items: ExtractedItem[]
   notes?: string
 }
@@ -184,8 +202,17 @@ L'électricien parle naturellement comme à un collègue. Tu dois EXTRAIRE l'int
 Renvoie STRICTEMENT un JSON conforme à ce schéma:
 {
   "client_hint": "string|null",            // nom client OU raison sociale si mentionné
+  "client_nom": "string|null",             // nom de famille (extraction enrichie)
+  "client_prenom": "string|null",          // prénom
+  "client_telephone": "string|null",       // téléphone
+  "client_email": "string|null",           // email si mentionné
+  "client_adresse": "string|null",         // adresse du client (rue, numéro)
+  "client_ville": "string|null",           // ville
+  "client_cp": "string|null",              // code postal
   "chantier_adresse": "string|null",       // adresse ou indication de localisation
+  "chantier_objet": "string|null",         // objet du devis (ex: 'Rénovation électrique appartement')
   "heures_main_oeuvre": number|null,       // heures de pose (1 journée = 8h, 1 demi-journée = 4h)
+  "taux_horaire": number|null,             // taux horaire en €/h (ex: 150€ de l'heure → 150)
   "notes": "string|null",                  // toute info contextuelle utile pour le client (urgence, étage, accès chantier, contraintes, fourniture client…)
   "items": [
     {
@@ -230,8 +257,17 @@ Règles d'extraction :
     const parsed = JSON.parse(text) as ExtractedDevis
     return {
       client_hint: parsed.client_hint || undefined,
+      client_nom: parsed.client_nom || undefined,
+      client_prenom: parsed.client_prenom || undefined,
+      client_telephone: parsed.client_telephone || undefined,
+      client_email: parsed.client_email || undefined,
+      client_adresse: parsed.client_adresse || undefined,
+      client_ville: parsed.client_ville || undefined,
+      client_cp: parsed.client_cp || undefined,
       chantier_adresse: parsed.chantier_adresse || undefined,
+      chantier_objet: parsed.chantier_objet || undefined,
       heures_main_oeuvre: typeof parsed.heures_main_oeuvre === "number" ? parsed.heures_main_oeuvre : undefined,
+      taux_horaire: typeof parsed.taux_horaire === "number" ? parsed.taux_horaire : undefined,
       items: Array.isArray(parsed.items) ? parsed.items.map(sanitizeItem) : [],
       notes: parsed.notes || undefined,
     }

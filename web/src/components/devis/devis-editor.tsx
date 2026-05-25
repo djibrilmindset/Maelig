@@ -129,10 +129,13 @@ function DevisEditorInner({
   // UX 2026-05-25 v2 : injection DIRECTE dans les champs, pas de ClarifyCard.
   // Le LLM classe les infos dans les bons champs (nom, adresse, CP, téléphone...)
   // et l'user peut corriger après dans le formulaire.
+  // FIX 2026-05-26 : ajout taux_horaire, chantier_objet, plus d'infos client,
+  // suppression des guards "!client.nom" pour permettre mises à jour multiples.
   function handleVoiceResult(r: VoiceData) {
     setTranscript({ raw: r.raw, corrected: r.corrected, language: r.language })
     setShowVoice(false)
 
+    // ── Articles ──
     const additions: DevisPayload["items"] = (r.extracted.items ?? []).map((it) => {
       const match = knownArticles.find((a) => a.nom.toLowerCase() === it.description.toLowerCase())
       return {
@@ -143,21 +146,58 @@ function DevisEditorInner({
         article_id: match?.id ?? null,
       }
     })
-    setItems((prev) => [...prev, ...additions])
+    if (additions.length > 0) setItems((prev) => [...prev, ...additions])
 
-    if (r.extracted.heures_main_oeuvre && !heuresMO) setHeuresMO(r.extracted.heures_main_oeuvre)
-    if (r.extracted.chantier_adresse && !chantier) setChantier(r.extracted.chantier_adresse)
-    if (r.extracted.chantier_objet && !objet) setObjet(r.extracted.chantier_objet)
-    if (r.extracted.notes && !notesClient) setNotesClient(r.extracted.notes)
+    // ── Taux horaire (NOUVEAU) ──
+    // On accepte l'extraction même si déjà rempli (le LLM peut préciser)
+    const ext = r.extracted
+    if (typeof ext.taux_horaire === "number" && ext.taux_horaire > 0) {
+      setTauxHoraire(ext.taux_horaire)
+    }
 
-    // Chaque info va dans son champ dédié
-    if (r.extracted.client_nom && !client.nom) setClient((c) => ({ ...c, nom: r.extracted.client_nom! }))
-    if (r.extracted.client_prenom && !client.prenom) setClient((c) => ({ ...c, prenom: r.extracted.client_prenom! }))
-    if (r.extracted.client_telephone && !client.telephone) setClient((c) => ({ ...c, telephone: r.extracted.client_telephone! }))
-    if (r.extracted.client_email && !client.email) setClient((c) => ({ ...c, email: r.extracted.client_email! }))
-    if (r.extracted.client_adresse && !client.adresse) setClient((c) => ({ ...c, adresse: r.extracted.client_adresse! }))
-    if (r.extracted.client_ville && !client.ville) setClient((c) => ({ ...c, ville: r.extracted.client_ville! }))
-    if (r.extracted.client_cp && !client.cp) setClient((c) => ({ ...c, cp: r.extracted.client_cp! }))
+    // ── Heures main-d'œuvre ──
+    if (typeof ext.heures_main_oeuvre === "number" && ext.heures_main_oeuvre > 0) {
+      setHeuresMO(ext.heures_main_oeuvre)
+    }
+
+    // ── Chantier & objet ──
+    if (ext.chantier_objet) setObjet(ext.chantier_objet)
+    if (ext.chantier_adresse) setChantier(ext.chantier_adresse)
+    if (ext.notes) setNotesClient(ext.notes)
+
+    // ── Client — champs dédiés d'abord, fallback client_hint ──
+    if (ext.client_nom || ext.client_hint) {
+      setClient((prev) => {
+        const next = { ...prev }
+        // Champs dédiés (extraction enrichie)
+        if (ext.client_nom) next.nom = ext.client_nom
+        if (ext.client_prenom) next.prenom = ext.client_prenom
+        if (ext.client_telephone) next.telephone = ext.client_telephone
+        if (ext.client_email) next.email = ext.client_email
+        if (ext.client_adresse) next.adresse = ext.client_adresse
+        if (ext.client_ville) next.ville = ext.client_ville
+        if (ext.client_cp) next.cp = ext.client_cp
+        // Fallback : si pas de client_nom mais un client_hint, essaye de split
+        if (!ext.client_nom && ext.client_hint && !prev.nom) {
+          const hint = ext.client_hint.trim()
+          // "Madame Martin" → nom: "Martin", prénom: ""
+          // "Jean Dupont" → prénom: "Jean", nom: "Dupont"
+          const prefixes = ["monsieur", "madame", "m.", "mme", "mr", "m.", "sarl", "sa", "ei", "eurl"]
+          const cleaned = prefixes.reduce((s, p) => {
+            const re = new RegExp(`^${p}\\s+`, "i")
+            return re.test(s) ? s.replace(re, "") : s
+          }, hint)
+          const parts = cleaned.split(/\s+/)
+          if (parts.length === 1) {
+            next.nom = parts[0]
+          } else if (parts.length >= 2) {
+            next.prenom = parts[0]
+            next.nom = parts.slice(1).join(" ")
+          }
+        }
+        return next
+      })
+    }
 
     setReviewNeeded(true)
 

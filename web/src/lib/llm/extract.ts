@@ -23,6 +23,7 @@ export async function extractDevis(
   chantier_adresse?: string
   chantier_objet?: string
   heures_main_oeuvre?: number
+  taux_horaire?: number
   items: Array<{ description: string; quantity: number; unit: string; category?: string }>
   notes?: string
 }> {
@@ -54,6 +55,7 @@ Renvoie STRICTEMENT un JSON conforme à ce schéma:
   "chantier_adresse": "string|null",  // adresse du chantier si différente
   "chantier_objet": "string|null",    // objet du devis (ex: 'Rénovation électrique appartement')
   "heures_main_oeuvre": number|null,  // heures de pose
+  "taux_horaire": number|null,        // taux horaire en €/h (ex: 150€ de l'heure → 150)
   "notes": "string|null",             // toute info utile (urgence, accès, fourniture client…)
   "items": [
     {
